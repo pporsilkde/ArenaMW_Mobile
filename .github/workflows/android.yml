@@ -1,0 +1,213 @@
+name: ArenaMW Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+    paths-ignore:
+      - '**/*.md'
+
+concurrency:
+  group: arenamw-android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-arm64:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 360
+    env:
+      BUILD_JOBS: 1
+      LTO: "false"
+      LTO_JOBS: 1
+      GENERATE_DEBUG_SYMBOLS: "false"
+      GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx3g
+
+    steps:
+      - name: Checkout Android builder
+        uses: actions/checkout@v4
+
+      # GitHub's web upload / ZIP extraction does not reliably preserve Unix executable bits.
+      # Make every script used by the original builder executable before the first native step.
+      - name: Restore executable permissions
+        shell: bash
+        run: |
+          find buildscripts -type f -name '*.sh' -exec chmod +x {} +
+          chmod +x gradlew
+          if [ -f storagechooser/gradlew ]; then chmod +x storagechooser/gradlew; fi
+          if [ -f CI/travis.sh ]; then chmod +x CI/travis.sh; fi
+
+      - name: Install native build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential cmake curl git patch unzip gettext-base \
+            autoconf automake libtool pkg-config python3 ccache ninja-build
+
+      # Modern sdkmanager itself needs Java 17. Gradle does not use this JDK.
+      - name: Set up JDK 17 for sdkmanager
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Android SDK 29
+        shell: bash
+        run: |
+          yes | "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager" \
+            "platform-tools" \
+            "platforms;android-29" \
+            "build-tools;29.0.3"
+
+      # Keep the original AGP 4.0.2 / Gradle 6.1.1 combination on Java 11.
+      - name: Set up JDK 11 for original Gradle toolchain
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '11'
+          cache: gradle
+
+      - name: Restore original native dependency cache
+        id: native-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            buildscripts/downloads
+            buildscripts/toolchain
+            buildscripts/prefix/arm64
+            buildscripts/build/arm64
+          key: arenamw-original-r21e-arm64-v6-nolto-${{ hashFiles('buildscripts/build.sh', 'buildscripts/CMakeLists.txt', 'buildscripts/include/version.sh', 'buildscripts/patches/**') }}
+          restore-keys: |
+            arenamw-original-r21e-arm64-v6-nolto-
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/ccache
+            ~/.ccache
+          key: arenamw-ccache-arm64-${{ github.run_id }}
+          restore-keys: |
+            arenamw-ccache-arm64-
+
+      - name: Configure ccache
+        run: |
+          ccache --set-config=max_size=4G
+          ccache --zero-stats || true
+
+      # Build expensive third-party libraries once. Save them before compiling
+      # ArenaMW, so an ArenaMW compiler error does not throw away the dependency work.
+      - name: Build native dependencies
+        if: steps.native-cache.outputs.cache-hit != 'true'
+        working-directory: buildscripts
+        run: bash ./build.sh --arch arm64 --ccache --release --dependencies-only
+
+      - name: Save native dependency cache
+        if: steps.native-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            buildscripts/downloads
+            buildscripts/toolchain
+            buildscripts/prefix/arm64
+            buildscripts/build/arm64
+          key: arenamw-original-r21e-arm64-v6-nolto-${{ hashFiles('buildscripts/build.sh', 'buildscripts/CMakeLists.txt', 'buildscripts/include/version.sh', 'buildscripts/patches/**') }}
+
+      # The cached build tree contains dependency stamps. Remove only the ArenaMW
+      # ExternalProject so main is cloned fresh while third-party libraries stay cached.
+      - name: Refresh ArenaMW source
+        run: rm -rf buildscripts/build/arm64/arenamw-prefix
+
+      - name: Add linker safety swap
+        shell: bash
+        run: |
+          echo '==> Memory before swap'
+          free -h
+          AVAILABLE_MB=$(df --output=avail -m / | tail -n 1 | tr -d ' ')
+          if [ "${AVAILABLE_MB:-0}" -ge 7000 ]; then
+            sudo fallocate -l 3G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=3072 status=none
+            sudo chmod 600 /swapfile
+            sudo mkswap /swapfile >/dev/null
+            sudo swapon /swapfile
+            echo '==> 3 GiB swap enabled for the final libopenmw.so link'
+          else
+            echo "==> Only ${AVAILABLE_MB:-unknown} MiB free on /; skipping swap to avoid filling the runner disk"
+          fi
+          free -h
+
+      - name: Build ArenaMW native arm64
+        working-directory: buildscripts
+        run: bash ./build.sh --arch arm64 --ccache --release --client-only
+
+      # Keep the complete compiler/linker log even when the native step fails.
+      # This avoids the GitHub UI ending at "100%" with the real linker error hidden.
+      - name: Prepare native failure diagnostics
+        if: failure()
+        shell: bash
+        run: |
+          mkdir -p native-diagnostics
+          cp -f buildscripts/build/arm64/arenamw-build.full.log native-diagnostics/ 2>/dev/null || true
+          cp -f buildscripts/build/arm64/arenamw-prefix/src/arenamw-build/CMakeFiles/CMakeError.log native-diagnostics/ 2>/dev/null || true
+          cp -f buildscripts/build/arm64/arenamw-prefix/src/arenamw-build/CMakeFiles/CMakeOutput.log native-diagnostics/ 2>/dev/null || true
+          {
+            echo '=== system ==='
+            uname -a || true
+            echo
+            echo '=== memory ==='
+            free -h || true
+            echo
+            echo '=== disk ==='
+            df -h || true
+            echo
+            echo '=== native outputs ==='
+            find buildscripts/build/arm64/arenamw-prefix/src/arenamw-build -maxdepth 2 -type f \
+              \( -name 'libopenmw.so' -o -name 'CMakeError.log' -o -name 'CMakeOutput.log' \) \
+              -printf '%p %s bytes\n' 2>/dev/null || true
+            echo
+            echo '=== packaged jniLibs ==='
+            find app/src/main/jniLibs -maxdepth 2 -type f -printf '%p %s bytes\n' 2>/dev/null || true
+          } > native-diagnostics/runner-state.txt
+
+      - name: Upload native failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ArenaMW-native-failure-${{ github.run_number }}
+          path: native-diagnostics/*
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Verify no multiplayer native library was packaged
+        shell: bash
+        run: |
+          test -f app/src/main/jniLibs/arm64-v8a/libopenmw.so
+          test ! -e app/src/main/jniLibs/arm64-v8a/libtes3mp.so
+          if find app/src/main/jniLibs/arm64-v8a -maxdepth 1 -type f -iname '*raknet*' | grep -q .; then
+            echo 'RakNet library unexpectedly present' >&2
+            exit 1
+          fi
+
+      - name: Build APK with original Gradle project
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleMainlineDebug
+
+      - name: Collect APK
+        shell: bash
+        run: |
+          mkdir -p dist
+          APK="$(find app/build/outputs/apk -type f -name '*.apk' | head -n 1)"
+          test -n "$APK"
+          cp "$APK" dist/ArenaMW-arm64-release.apk
+          sha256sum dist/ArenaMW-arm64-release.apk > dist/ArenaMW-arm64-release.apk.sha256
+
+      - name: Show ccache statistics
+        if: always()
+        run: ccache --show-stats || true
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ArenaMW-Android-arm64
+          path: dist/*
+          if-no-files-found: error

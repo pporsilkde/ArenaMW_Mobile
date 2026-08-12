@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.libopenmw.openmw">
+    <!-- Allow writing to external storage -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" /> 
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <application
+        android:requestLegacyExternalStorage="true"
+        android:name="utils.MyApp"
+        android:allowBackup="true"
+        android:hardwareAccelerated="true"
+        android:icon="@drawable/ic_start_button"
+        android:roundIcon="@drawable/ic_start_button"
+        android:label="ArenaMW"
+        android:theme="@style/MyTheme"
+        android:usesCleartextTraffic="true"
+        tools:ignore="GoogleAppIndexingWarning">
+        <activity
+            android:name="ui.activity.MainActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:label="ArenaMW"
+            android:screenOrientation="fullUser">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="ui.activity.GameActivity"
+            android:configChanges="keyboardHidden|orientation"
+            android:screenOrientation="sensorLandscape"
+            android:windowSoftInputMode="adjustNothing|stateHidden"
+            android:theme="@style/Theme.AppCompat.FullScreen" />
+        <activity
+            android:name="ui.activity.ConfigureControls"
+            android:configChanges="keyboardHidden|orientation"
+            android:screenOrientation="sensorLandscape"
+            android:theme="@style/Theme.AppCompat.FullScreen" />
+        <activity
+            android:name="ui.activity.ModsActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:screenOrientation="fullUser"
+            android:theme="@style/MyTheme"
+            android:exported="true"
+            android:label="@string/activity_mods"
+            />
+    </application>
+
+</manifest>
