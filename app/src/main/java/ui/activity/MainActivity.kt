@@ -692,6 +692,24 @@ class MainActivity : AppCompatActivity() {
                     file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Terrain", "distant terrain",   if (preset.distantTerrain) "true" else "false")
                 }
 
+                // Android-safe renderer V1. ArenaMW's desktop defaults force the full
+                // GLSL/PBR path, but the current NG-GL4ES simple converter only renders
+                // part of that shader set correctly (broken sky/foliage/materials).
+                // Force a known-good legacy baseline first. Once native GLES / the
+                // advanced converter is stable these overrides can be relaxed one by one.
+                val androidSettings = Constants.USER_CONFIG + "/settings.cfg"
+                file.Writer.write(androidSettings, "Shaders", "force shaders", "false")
+                file.Writer.write(androidSettings, "Shaders", "force per pixel lighting", "false")
+                file.Writer.write(androidSettings, "Shaders", "lighting method", "legacy")
+                file.Writer.write(androidSettings, "Shaders", "enhanced pbr lighting", "false")
+                file.Writer.write(androidSettings, "Shaders", "material quality", "none")
+                file.Writer.write(androidSettings, "Shaders", "auto use object normal maps", "false")
+                file.Writer.write(androidSettings, "Shaders", "auto use object specular maps", "false")
+                file.Writer.write(androidSettings, "Shaders", "auto use terrain normal maps", "false")
+                file.Writer.write(androidSettings, "Shaders", "auto use terrain specular maps", "false")
+                file.Writer.write(androidSettings, "Water", "shader", "false")
+                file.Writer.write(androidSettings, "Water", "refraction", "false")
+                file.Writer.write(androidSettings, "Shadows", "enable shadows", "false")
 
                 configureDefaultsBin(mapOf(
 
