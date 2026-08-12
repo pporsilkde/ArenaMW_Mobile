@@ -692,11 +692,9 @@ class MainActivity : AppCompatActivity() {
                     file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Terrain", "distant terrain",   if (preset.distantTerrain) "true" else "false")
                 }
 
-                // Android-safe renderer V2. V1 proved that the fixed-function baseline
-                // renders correctly. Re-enable the *basic* OpenMW object shader path, but
-                // keep expensive/fragile desktop features disabled. Water is enabled too,
-                // while the engine patch selects ArenaMW's legacy water shader on Android
-                // instead of the much heavier PBR water shader.
+                // Android complex-water V3. Keep the stable object/terrain compatibility
+                // renderer from V2, but deliberately re-enable ArenaMW's complex PBR water
+                // through an Android-specific GLES compatibility fragment shader.
                 val androidSettings = Constants.USER_CONFIG + "/settings.cfg"
                 file.Writer.write(androidSettings, "Shaders", "force shaders", "true")
                 file.Writer.write(androidSettings, "Shaders", "force per pixel lighting", "false")
@@ -713,10 +711,10 @@ class MainActivity : AppCompatActivity() {
                 file.Writer.write(androidSettings, "Shaders", "auto use terrain specular maps", "false")
                 file.Writer.write(androidSettings, "Shaders", "antialias alpha test", "false")
                 file.Writer.write(androidSettings, "Water", "shader", "true")
-                file.Writer.write(androidSettings, "Water", "refraction", "false")
-                file.Writer.write(androidSettings, "Water", "shader water ripples", "false")
-                file.Writer.write(androidSettings, "Water", "reflection detail", "2")
-                file.Writer.write(androidSettings, "Water", "rtt size", "256")
+                file.Writer.write(androidSettings, "Water", "refraction", "true")
+                file.Writer.write(androidSettings, "Water", "shader water ripples", "true")
+                file.Writer.write(androidSettings, "Water", "reflection detail", "3")
+                file.Writer.write(androidSettings, "Water", "rtt size", "512")
                 file.Writer.write(androidSettings, "Shadows", "enable shadows", "false")
 
                 configureDefaultsBin(mapOf(

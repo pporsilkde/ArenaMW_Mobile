@@ -112,9 +112,9 @@ class GameActivity : SDLActivity() {
             Os.setenv("OSG_SHADER_CACHE_ENABLED", if (preset?.shaderCache != false) "1" else "0", true)
 
             // ── NG-GL4ES специфичные переменные ──────────────────────────────
-            // Safe compatibility mode for the current ArenaMW/OpenMW 0.47 shader set.
-            // The forced SPIRV-Cross path (0) caused a purple frame and an early native exit
-            // on the current Android port, so keep the last known-working converter for now.
+            // Keep the known-working simple converter for the general ArenaMW 0.47 renderer.
+            // Complex water V3 is adapted at shader-source level instead of globally forcing
+            // the unstable advanced converter that previously produced a purple frame/crash.
             Os.setenv("LIBGL_SIMPLE_SHADERCONV", "1", true)
             // Instancing через SPIRV
             Os.setenv("LIBGL_INSTANCING", "1", true)
