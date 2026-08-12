@@ -88,3 +88,7 @@ Workflow intentionally builds arm64 with `-O3` but with ThinLTO disabled (`LTO=f
 This avoids the highest-memory final `libopenmw.so` link. The native dependency cache key is `v6-nolto` so old ThinLTO objects are not reused.
 When enough runner disk is available, CI also enables a 3 GiB swap file before the ArenaMW client link.
 After a successful baseline APK, ThinLTO can be tested again separately.
+
+### Swap для финальной линковки
+
+Workflow сначала проверяет уже активный swap. Если GitHub runner уже имеет не менее 2 GiB swap, он используется как есть. Дополнительный swap создаётся только при необходимости и его настройка не может сама уронить сборку.

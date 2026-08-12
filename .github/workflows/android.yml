@@ -118,22 +118,46 @@ jobs:
       - name: Refresh ArenaMW source
         run: rm -rf buildscripts/build/arm64/arenamw-prefix
 
-      - name: Add linker safety swap
+      - name: Ensure linker safety swap
         shell: bash
         run: |
-          echo '==> Memory before swap'
-          free -h
-          AVAILABLE_MB=$(df --output=avail -m / | tail -n 1 | tr -d ' ')
-          if [ "${AVAILABLE_MB:-0}" -ge 7000 ]; then
-            sudo fallocate -l 3G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=3072 status=none
-            sudo chmod 600 /swapfile
-            sudo mkswap /swapfile >/dev/null
-            sudo swapon /swapfile
-            echo '==> 3 GiB swap enabled for the final libopenmw.so link'
+          echo '==> Memory before swap check'
+          free -h || true
+
+          # GitHub-hosted runners may already have swap enabled.  Never touch an
+          # active /swapfile: trying to fallocate it again fails with "Text file busy".
+          EXISTING_SWAP_MB=$(free -m | awk '/^Swap:/ {print $2}')
+          EXISTING_SWAP_MB=${EXISTING_SWAP_MB:-0}
+
+          if [ "$EXISTING_SWAP_MB" -ge 2048 ]; then
+            echo "==> Existing swap is already ${EXISTING_SWAP_MB} MiB; keeping it"
           else
-            echo "==> Only ${AVAILABLE_MB:-unknown} MiB free on /; skipping swap to avoid filling the runner disk"
+            AVAILABLE_MB=$(df --output=avail -m / | tail -n 1 | tr -d ' ')
+            EXTRA_SWAP=/mnt/arenamw-linker.swap
+
+            if [ "${AVAILABLE_MB:-0}" -ge 7000 ]; then
+              echo "==> Existing swap is only ${EXISTING_SWAP_MB} MiB; trying to add 3 GiB at ${EXTRA_SWAP}"
+              sudo swapoff "$EXTRA_SWAP" 2>/dev/null || true
+              sudo rm -f "$EXTRA_SWAP" 2>/dev/null || true
+
+              if sudo fallocate -l 3G "$EXTRA_SWAP" 2>/dev/null ||                  sudo dd if=/dev/zero of="$EXTRA_SWAP" bs=1M count=3072 status=none; then
+                sudo chmod 600 "$EXTRA_SWAP" || true
+                if sudo mkswap "$EXTRA_SWAP" >/dev/null 2>&1 && sudo swapon "$EXTRA_SWAP"; then
+                  echo '==> Added 3 GiB ArenaMW linker swap'
+                else
+                  echo '::warning::Could not enable extra swap; continuing with existing RAM/swap'
+                  sudo rm -f "$EXTRA_SWAP" 2>/dev/null || true
+                fi
+              else
+                echo '::warning::Could not allocate extra swap; continuing with existing RAM/swap'
+              fi
+            else
+              echo "==> Only ${AVAILABLE_MB:-unknown} MiB free on /; skipping extra swap"
+            fi
           fi
-          free -h
+
+          echo '==> Memory after swap check'
+          free -h || true
 
       - name: Build ArenaMW native arm64
         working-directory: buildscripts
