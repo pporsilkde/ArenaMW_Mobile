@@ -692,23 +692,31 @@ class MainActivity : AppCompatActivity() {
                     file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Terrain", "distant terrain",   if (preset.distantTerrain) "true" else "false")
                 }
 
-                // Android-safe renderer V1. ArenaMW's desktop defaults force the full
-                // GLSL/PBR path, but the current NG-GL4ES simple converter only renders
-                // part of that shader set correctly (broken sky/foliage/materials).
-                // Force a known-good legacy baseline first. Once native GLES / the
-                // advanced converter is stable these overrides can be relaxed one by one.
+                // Android-safe renderer V2. V1 proved that the fixed-function baseline
+                // renders correctly. Re-enable the *basic* OpenMW object shader path, but
+                // keep expensive/fragile desktop features disabled. Water is enabled too,
+                // while the engine patch selects ArenaMW's legacy water shader on Android
+                // instead of the much heavier PBR water shader.
                 val androidSettings = Constants.USER_CONFIG + "/settings.cfg"
-                file.Writer.write(androidSettings, "Shaders", "force shaders", "false")
+                file.Writer.write(androidSettings, "Shaders", "force shaders", "true")
                 file.Writer.write(androidSettings, "Shaders", "force per pixel lighting", "false")
-                file.Writer.write(androidSettings, "Shaders", "lighting method", "legacy")
+                file.Writer.write(androidSettings, "Shaders", "lighting method", "shaders compatibility")
+                file.Writer.write(androidSettings, "Shaders", "hdr lighting", "false")
+                file.Writer.write(androidSettings, "Shaders", "bloom enabled", "false")
+                file.Writer.write(androidSettings, "Shaders", "native ssr enabled", "false")
+                file.Writer.write(androidSettings, "Shaders", "smaa enabled", "false")
                 file.Writer.write(androidSettings, "Shaders", "enhanced pbr lighting", "false")
                 file.Writer.write(androidSettings, "Shaders", "material quality", "none")
                 file.Writer.write(androidSettings, "Shaders", "auto use object normal maps", "false")
                 file.Writer.write(androidSettings, "Shaders", "auto use object specular maps", "false")
                 file.Writer.write(androidSettings, "Shaders", "auto use terrain normal maps", "false")
                 file.Writer.write(androidSettings, "Shaders", "auto use terrain specular maps", "false")
-                file.Writer.write(androidSettings, "Water", "shader", "false")
+                file.Writer.write(androidSettings, "Shaders", "antialias alpha test", "false")
+                file.Writer.write(androidSettings, "Water", "shader", "true")
                 file.Writer.write(androidSettings, "Water", "refraction", "false")
+                file.Writer.write(androidSettings, "Water", "shader water ripples", "false")
+                file.Writer.write(androidSettings, "Water", "reflection detail", "2")
+                file.Writer.write(androidSettings, "Water", "rtt size", "256")
                 file.Writer.write(androidSettings, "Shadows", "enable shadows", "false")
 
                 configureDefaultsBin(mapOf(

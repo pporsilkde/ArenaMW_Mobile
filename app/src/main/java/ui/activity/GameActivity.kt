@@ -99,7 +99,7 @@ class GameActivity : SDLActivity() {
             Os.setenv("OSG_TEXT_SHADER_TECHNIQUE", "ALL", true)
             Os.setenv("OSG_MIN_NEAR_FAR_RATIO", "0.0001", true)
             Os.setenv("OSG_COP_VALUE", "0x00000100", true)
-            Os.setenv("OSG_NOTIFY_LEVEL", if (BuildConfig.DEBUG) "WARN" else "FATAL", true)
+            Os.setenv("OSG_NOTIFY_LEVEL", "WARN", true)
 
             // ── OSG Threading из preset ───────────────────────────────────────
             val presetId = prefs!!.getString("pref_graphics_preset", "auto")
@@ -126,6 +126,8 @@ class GameActivity : SDLActivity() {
             // Keep Android graphics diagnostics enabled even in release CI builds until
             // the GLES shader path is stable. This avoids another "empty log" crash.
             Os.setenv("LIBGL_LOG", "1", true)
+            // Keep shader compiler/linker failures visible without dumping every converted shader.
+            Os.setenv("LIBGL_LOGSHADERERROR", "1", true)
             Os.setenv("OPENMW_DISABLE_LOGS", "0", true)
 
             // ── Texture shrink из настроек ────────────────────────────────────
