@@ -2,6 +2,12 @@ name: ArenaMW Android APK
 
 on:
   workflow_dispatch:
+    inputs:
+      clean_arenamw_build:
+        description: Ignore the cached ArenaMW source/build tree for this run (third-party dependencies stay cached)
+        required: false
+        default: false
+        type: boolean
   push:
     branches: [ main, master ]
     paths-ignore:
@@ -20,6 +26,9 @@ jobs:
       LTO: "false"
       LTO_JOBS: 1
       GENERATE_DEBUG_SYMBOLS: "false"
+      ARENAMW_REPOSITORY: https://github.com/pporsilkde/AMW.git
+      ARENAMW_GIT_TAG: main
+      ARENAMW_INCREMENTAL_CACHE_EPOCH: arenamw-android-arm64-inc-v1
       GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx3g
 
     steps:
@@ -113,10 +122,78 @@ jobs:
             buildscripts/build/arm64
           key: arenamw-original-r21e-arm64-v6-nolto-${{ hashFiles('buildscripts/build.sh', 'buildscripts/CMakeLists.txt', 'buildscripts/include/version.sh', 'buildscripts/patches/**') }}
 
-      # The cached build tree contains dependency stamps. Remove only the ArenaMW
-      # ExternalProject so main is cloned fresh while third-party libraries stay cached.
-      - name: Refresh ArenaMW source
+      - name: Drop ArenaMW incremental tree on request
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.clean_arenamw_build == true }}
+        shell: bash
         run: rm -rf buildscripts/build/arm64/arenamw-prefix
+
+      # Keep ArenaMW's own source + CMake build tree between CI runs.  The cache
+      # key is intentionally unique per run, while restore-keys select the most
+      # recent compatible tree.  This is the Android equivalent of the Windows
+      # incremental build cache: unchanged .cpp files remain up-to-date.
+      - name: Restore incremental ArenaMW build tree
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.clean_arenamw_build == false }}
+        uses: actions/cache/restore@v4
+        with:
+          path: buildscripts/build/arm64/arenamw-prefix
+          key: ${{ env.ARENAMW_INCREMENTAL_CACHE_EPOCH }}-${{ hashFiles('buildscripts/build.sh', 'buildscripts/CMakeLists.txt', 'buildscripts/include/version.sh', 'buildscripts/patches/openmw/**', '.github/workflows/android.yml') }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            ${{ env.ARENAMW_INCREMENTAL_CACHE_EPOCH }}-${{ hashFiles('buildscripts/build.sh', 'buildscripts/CMakeLists.txt', 'buildscripts/include/version.sh', 'buildscripts/patches/openmw/**', '.github/workflows/android.yml') }}-
+
+      # ExternalProject keeps the checked-out AMW repository inside arenamw-prefix.
+      # If upstream/main did not move, leave that tree completely untouched so its
+      # mtimes match the cached object files.  If upstream changed, reset only the
+      # patched working tree, fetch the new commit and invalidate patch/configure
+      # stamps without deleting the binary directory.  Make/CMake then rebuilds
+      # only source files affected by the Git update (plus Android-patched files).
+      - name: Update cached ArenaMW source from pporsilkde/AMW
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC="buildscripts/build/arm64/arenamw-prefix/src/arenamw"
+          STAMP="buildscripts/build/arm64/arenamw-prefix/src/arenamw-stamp"
+
+          if [[ ! -d "$SRC/.git" ]]; then
+            echo '==> No cached ArenaMW checkout; ExternalProject will clone pporsilkde/AMW on this run'
+            if [[ -e "$SRC" || -d "buildscripts/build/arm64/arenamw-prefix" ]]; then
+              # A partial/corrupt cache must not block ExternalProject's first clone.
+              rm -rf buildscripts/build/arm64/arenamw-prefix
+            fi
+            exit 0
+          fi
+
+          git -C "$SRC" remote set-url origin "$ARENAMW_REPOSITORY"
+          LOCAL_SHA="$(git -C "$SRC" rev-parse HEAD)"
+          REMOTE_SHA="$(git ls-remote "$ARENAMW_REPOSITORY" "refs/heads/$ARENAMW_GIT_TAG" | awk 'NR==1 {print $1}')"
+          if [[ -z "$REMOTE_SHA" ]]; then
+            echo "Could not resolve $ARENAMW_REPOSITORY refs/heads/$ARENAMW_GIT_TAG" >&2
+            exit 1
+          fi
+
+          PATCH_STAMP="$STAMP/arenamw-patch"
+          echo "==> Cached ArenaMW base: $LOCAL_SHA"
+          echo "==> Upstream ArenaMW base: $REMOTE_SHA"
+
+          if [[ "$LOCAL_SHA" == "$REMOTE_SHA" && -f "$PATCH_STAMP" ]]; then
+            echo '==> ArenaMW source is unchanged; preserving source/object mtimes for a true incremental build'
+            exit 0
+          fi
+
+          echo '==> ArenaMW source or patch state changed; updating checkout without deleting the build tree'
+          # Android compatibility patches leave the checkout dirty by design. Revert
+          # them before moving to the new upstream commit, then let ExternalProject
+          # apply them once again via the invalidated patch stamp.
+          git -C "$SRC" reset --hard HEAD
+          git -C "$SRC" clean -fdx
+          git -C "$SRC" fetch --depth=50 origin "$ARENAMW_GIT_TAG"
+          git -C "$SRC" checkout --detach "$REMOTE_SHA"
+
+          rm -f \
+            "$STAMP/arenamw-patch" \
+            "$STAMP/arenamw-configure" \
+            "$STAMP/arenamw-build" \
+            "$STAMP/arenamw-install" \
+            "$STAMP/arenamw-done"
 
       - name: Ensure linker safety swap
         shell: bash
@@ -162,6 +239,17 @@ jobs:
       - name: Build ArenaMW native arm64
         working-directory: buildscripts
         run: bash ./build.sh --arch arm64 --ccache --release --client-only
+
+      # GitHub cache entries are immutable, therefore every run writes a new key
+      # and the next run restores the newest compatible prefix via restore-keys.
+      # Save even after a compiler error: successfully produced .o files remain
+      # useful for the next run and ccache provides a second level of reuse.
+      - name: Save incremental ArenaMW build tree
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: buildscripts/build/arm64/arenamw-prefix
+          key: ${{ env.ARENAMW_INCREMENTAL_CACHE_EPOCH }}-${{ hashFiles('buildscripts/build.sh', 'buildscripts/CMakeLists.txt', 'buildscripts/include/version.sh', 'buildscripts/patches/openmw/**', '.github/workflows/android.yml') }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       # Keep the complete compiler/linker log even when the native step fails.
       # This avoids the GitHub UI ending at "100%" with the real linker error hidden.

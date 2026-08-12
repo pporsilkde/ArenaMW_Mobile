@@ -112,9 +112,10 @@ class GameActivity : SDLActivity() {
             Os.setenv("OSG_SHADER_CACHE_ENABLED", if (preset?.shaderCache != false) "1" else "0", true)
 
             // ── NG-GL4ES специфичные переменные ──────────────────────────────
-            // Use NG-GL4ES advanced glslang/SPIRV-Cross path. SIMPLE_SHADERCONV=1
-            // selects the legacy/simple converter and breaks a number of ArenaMW GLSL 120 shaders.
-            Os.setenv("LIBGL_SIMPLE_SHADERCONV", "0", true)
+            // Safe compatibility mode for the current ArenaMW/OpenMW 0.47 shader set.
+            // The forced SPIRV-Cross path (0) caused a purple frame and an early native exit
+            // on the current Android port, so keep the last known-working converter for now.
+            Os.setenv("LIBGL_SIMPLE_SHADERCONV", "1", true)
             // Instancing через SPIRV
             Os.setenv("LIBGL_INSTANCING", "1", true)
             // DXT mipmaps через NG-GL4ES
@@ -122,8 +123,10 @@ class GameActivity : SDLActivity() {
             // Текстуры
             Os.setenv("LIBGL_AVOID16BITS", "1", true)
             // Лог только в debug
-            Os.setenv("LIBGL_LOG", if (BuildConfig.DEBUG) "1" else "0", true)
-            Os.setenv("OPENMW_DISABLE_LOGS", if (BuildConfig.DEBUG) "0" else "1", true)
+            // Keep Android graphics diagnostics enabled even in release CI builds until
+            // the GLES shader path is stable. This avoids another "empty log" crash.
+            Os.setenv("LIBGL_LOG", "1", true)
+            Os.setenv("OPENMW_DISABLE_LOGS", "0", true)
 
             // ── Texture shrink из настроек ────────────────────────────────────
             val shrinkLevel = when {

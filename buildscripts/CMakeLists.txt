@@ -503,7 +503,6 @@ set(ARENAMW_PATCH
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/03-android-fix-context-being-lost-on-app-minimize.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/04-settingswindow-save-user-settings-file-when-ok-is-pr.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/05-components-misc-stringops-use-boost-format-instead-o.patch &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/06-android-rqcb-postdraw-capture-camera.patch &&
 	cp ${CMAKE_SOURCE_DIR}/patches/openmw/android_main.cpp <SOURCE_DIR>/apps/openmw/android_main.cpp &&
 	sh ${CMAKE_SOURCE_DIR}/patches/openmw/patch-sse2neon.sh <SOURCE_DIR>
 )
@@ -529,6 +528,11 @@ ExternalProject_Add(arenamw
 	CONFIGURE_COMMAND ${wrapper_command} cmake <SOURCE_DIR>
 	${COMMON_CMAKE_ARGS}
 	${OPENMW_COMMON}
+
+	# Always invoke the nested ArenaMW build. The cached CMake/Make build tree
+	# then decides which translation units are actually out of date, so unchanged
+	# sources are not recompiled on subsequent CI runs.
+	BUILD_ALWAYS TRUE
 
 	# Single-player ArenaMW Android library only.
 	BUILD_COMMAND ${wrapper_command} ${CMAKE_COMMAND} --build <BINARY_DIR> --target openmw --parallel ${BUILD_JOBS}
