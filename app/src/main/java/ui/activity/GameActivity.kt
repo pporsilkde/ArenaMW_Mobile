@@ -112,8 +112,9 @@ class GameActivity : SDLActivity() {
             Os.setenv("OSG_SHADER_CACHE_ENABLED", if (preset?.shaderCache != false) "1" else "0", true)
 
             // ── NG-GL4ES специфичные переменные ──────────────────────────────
-            // SPIRV-Cross конвертация шейдеров — ключевая фича для теней
-            Os.setenv("LIBGL_SIMPLE_SHADERCONV", "1", true)
+            // Use NG-GL4ES advanced glslang/SPIRV-Cross path. SIMPLE_SHADERCONV=1
+            // selects the legacy/simple converter and breaks a number of ArenaMW GLSL 120 shaders.
+            Os.setenv("LIBGL_SIMPLE_SHADERCONV", "0", true)
             // Instancing через SPIRV
             Os.setenv("LIBGL_INSTANCING", "1", true)
             // DXT mipmaps через NG-GL4ES
