@@ -341,11 +341,14 @@ ExternalProject_Add(NG-GL4ES
 
 	BUILD_COMMAND ${wrapper_command} $(MAKE)
 
-	INSTALL_COMMAND mkdir -p ${prefix}/lib/
+	# Do not rely on another dependency/cache having created prefix/include.
+	# Copy the *contents* of NG-GL4ES/include so an existing gl4es directory
+	# cannot accidentally produce prefix/include/gl4es/include/... .
+	INSTALL_COMMAND mkdir -p ${prefix}/lib/ ${prefix}/include/gl4es/
 	COMMAND cp libng_gl4es.so ${prefix}/lib/
 	COMMAND cp <SOURCE_DIR>/libraries/${app_abi}/libspirv-cross-c-shared.so ${prefix}/lib/
-	COMMAND cp -r <SOURCE_DIR>/include ${prefix}/include/gl4es/
-	COMMAND cp -r <SOURCE_DIR>/include ${prefix}/
+	COMMAND cp -r <SOURCE_DIR>/include/. ${prefix}/include/gl4es/
+	COMMAND cp -r <SOURCE_DIR>/include/. ${prefix}/include/
 )
 
 # Alias so existing targets depending on "gl4es" still resolve

@@ -165,6 +165,9 @@ mkdir -p prefix/$ARCH/
 
 # symlink lib64 -> lib so we don't get half the libs in one directory half in another
 mkdir -p prefix/$ARCH/lib
+# A fresh dependency cache has no prefix/include yet. NG-GL4ES installs
+# its headers before several other dependencies, so create it explicitly.
+mkdir -p prefix/$ARCH/include
 ln -sf lib prefix/$ARCH/lib64
 mkdir -p prefix/$ARCH/osg/lib
 ln -sf lib prefix/$ARCH/osg/lib64
