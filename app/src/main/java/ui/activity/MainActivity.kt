@@ -313,47 +313,24 @@ class MainActivity : AppCompatActivity() {
             var output = base + "\n" + fallback + "\n"
 
             // output resources
+            // The mod database is authoritative. Do not re-sort or re-enable
+            // entries during launch: what the user configured in the Mods screen
+            // is exactly what is written to openmw.cfg.
             resources.mods
                 .filter { it.enabled }
-                .sortedWith(compareBy<mods.Mod> {
-                    when (it.filename) {
-                        "Morrowind.bsa" -> 0
-                        "Tribunal.bsa" -> 1
-                        "Bloodmoon.bsa" -> 2
-                        else -> 1000
-                    }
-                }.thenBy { it.filename.toLowerCase() })
+                .sortedBy { it.order }
                 .forEach { output += "fallback-archive=${it.filename}\n" }
 
-            val preferredPluginOrder = listOf(
-                "Morrowind.esm",
-                "Tribunal.esm",
-                "Bloodmoon.esm",
-                "GFM.esm",
-                "Rebirth_Main.esm",
-                "OAAB_Data.esm",
-                "Tamriel_Data.esm",
-                "TR_Mainland.esm",
-                "Cyr_Main.esm",
-                "Sky_Main.esm",
-                "Wares-base.esm",
-                "NOD_Core.esm",
-                "TDoO_Main.esm",
-                "Nirn_Core.esp"
-            )
-
-            // output plugins
+            // output plugins in the user's persisted load order
             plugins.mods
                 .filter { it.enabled }
-                .sortedWith(compareBy<mods.Mod> {
-                    val idx = preferredPluginOrder.indexOf(it.filename)
-                    if (idx >= 0) idx else Int.MAX_VALUE
-                }.thenBy { it.order })
+                .sortedBy { it.order }
                 .forEach { output += "content=${it.filename}\n" }
 
             // output groundcover
             groundcovers.mods
                 .filter { it.enabled }
+                .sortedBy { it.order }
                 .forEach { output += "groundcover=${it.filename}\n" }
 
             // write everything to openmw.cfg
@@ -690,7 +667,33 @@ class MainActivity : AppCompatActivity() {
                     file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Shaders", "force per pixel lighting", if (preset.perPixelLighting) "true" else "false")
                     file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Terrain", "object paging",     if (preset.objectPaging) "true" else "false")
                     file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Terrain", "distant terrain",   if (preset.distantTerrain) "true" else "false")
+
+                    // Shadows are now part of the mobile graphics preset.
+                    val presetShadowOn = preset.shadowScope != "off"
+                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Shadows", "enable shadows", if (presetShadowOn) "true" else "false")
+                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Shadows", "player shadows", if (presetShadowOn) "true" else "false")
+                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Shadows", "actor shadows", if (preset.shadowScope == "characters" || preset.shadowScope == "objects") "true" else "false")
+                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Shadows", "object shadows", if (preset.shadowScope == "objects") "true" else "false")
+                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Shadows", "terrain shadows", "false")
+                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Shadows", "enable indoor shadows", "false")
+                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Shadows", "shadow map resolution", preset.shadowResolution.toString())
                 }
+
+                // Explicit launcher shadow override. "preset" keeps the values from
+                // the selected graphics preset (or the existing settings in Auto).
+                val shadowScope = prefs.getString("pref_shadow_scope", "preset") ?: "preset"
+                if (shadowScope != "preset") {
+                    val enabled = shadowScope != "off"
+                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Shadows", "enable shadows", if (enabled) "true" else "false")
+                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Shadows", "player shadows", if (enabled) "true" else "false")
+                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Shadows", "actor shadows", if (shadowScope == "characters" || shadowScope == "objects") "true" else "false")
+                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Shadows", "object shadows", if (shadowScope == "objects") "true" else "false")
+                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Shadows", "terrain shadows", "false")
+                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Shadows", "enable indoor shadows", "false")
+                }
+                val shadowQuality = prefs.getString("pref_shadow_quality", "preset") ?: "preset"
+                if (shadowQuality != "preset")
+                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Shadows", "shadow map resolution", shadowQuality)
 
                 // Android complex-water V3. Keep the stable object/terrain compatibility
                 // renderer from V2, but deliberately re-enable ArenaMW's complex PBR water
@@ -711,17 +714,13 @@ class MainActivity : AppCompatActivity() {
                 file.Writer.write(androidSettings, "Water", "shader water ripples", "true")
                 file.Writer.write(androidSettings, "Water", "reflection detail", "3")
 
-                // V9: post-processing is supported on Android but remains opt-in.
-                // Seed the master switches OFF exactly once; after that the in-game
-                // ArenaMW settings are authoritative and the launcher never resets them.
-                val postFxDefaultsV9 = "arenamw_android_postfx_defaults_v9"
-                if (!prefs.getBoolean(postFxDefaultsV9, false)) {
-                    file.Writer.write(androidSettings, "Shaders", "hdr lighting", "false")
-                    file.Writer.write(androidSettings, "Shaders", "bloom enabled", "false")
-                    file.Writer.write(androidSettings, "Shaders", "native ssr enabled", "false")
-                    file.Writer.write(androidSettings, "Shaders", "smaa enabled", "false")
-                    prefs.edit().putBoolean(postFxDefaultsV9, true).apply()
-                }
+                // Android stable profile: desktop post-processing is intentionally
+                // removed. Keep these values forced off so stale settings.cfg files or
+                // older installs cannot reactivate the black-screen paths.
+                file.Writer.write(androidSettings, "Shaders", "hdr lighting", "false")
+                file.Writer.write(androidSettings, "Shaders", "bloom enabled", "false")
+                file.Writer.write(androidSettings, "Shaders", "native ssr enabled", "false")
+                file.Writer.write(androidSettings, "Shaders", "smaa enabled", "false")
 
                 // V8 mobile defaults are a one-time migration, not a per-launch override.
                 // This keeps the tested GLES shader path intact while allowing the user to
@@ -734,18 +733,14 @@ class MainActivity : AppCompatActivity() {
                     file.Writer.write(androidSettings, "Water", "rtt size", "256")
                     file.Writer.write(androidSettings, "Water", "wave strength", "0.34")
 
-                    // GLES shadows remain fully available, but start disabled. When enabled
-                    // by the user they use one 512 map; actor/player/object casters are kept
-                    // ready so flipping the master switch immediately produces shadows.
-                    file.Writer.write(androidSettings, "Shadows", "enable shadows", "false")
+                    // Seed only the non-user-facing mobile shadow internals here.
+                    // Shadow enable/scope and map resolution are owned by the launcher
+                    // selectors above, so the first-run migration must never overwrite
+                    // the user's selected preset/override.
                     file.Writer.write(androidSettings, "Shadows", "number of shadow maps", "1")
                     file.Writer.write(androidSettings, "Shadows", "maximum shadow map distance", "4096")
                     file.Writer.write(androidSettings, "Shadows", "shadow fade start", "0.82")
                     file.Writer.write(androidSettings, "Shadows", "allow shadow map overlap", "false")
-                    file.Writer.write(androidSettings, "Shadows", "shadow map resolution", "512")
-                    file.Writer.write(androidSettings, "Shadows", "actor shadows", "true")
-                    file.Writer.write(androidSettings, "Shadows", "player shadows", "true")
-                    file.Writer.write(androidSettings, "Shadows", "object shadows", "true")
                     file.Writer.write(androidSettings, "Shadows", "terrain shadows", "false")
                     file.Writer.write(androidSettings, "Shadows", "enable indoor shadows", "false")
                     file.Writer.write(androidSettings, "Shadows", "enhanced filtering", "false")

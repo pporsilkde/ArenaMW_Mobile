@@ -31,26 +31,6 @@ class ModsCollection(private val type: ModType,
                      private val dataFiles: String,
                      private val db: ModsDatabaseOpenHelper) {
 
-    companion object {
-        private val BUILTIN_BSA_ORDER = listOf("Morrowind.bsa", "Tribunal.bsa", "Bloodmoon.bsa")
-        private val BUILTIN_PLUGIN_ORDER = listOf(
-            "Morrowind.esm",
-            "Tribunal.esm",
-            "Bloodmoon.esm",
-            "GFM.esm",
-            "Rebirth_Main.esm",
-            "OAAB_Data.esm",
-            "Tamriel_Data.esm",
-            "TR_Mainland.esm",
-            "Cyr_Main.esm",
-            "Sky_Main.esm",
-            "Wares-base.esm",
-            "NOD_Core.esm",
-            "TDoO_Main.esm",
-            "Nirn_Core.esp"
-        )
-    }
-
     val mods = arrayListOf<Mod>()
     private var extensions: Array<String> = if (type == ModType.Resource)
         arrayOf("bsa")
@@ -113,16 +93,6 @@ class ModsCollection(private val type: ModType,
     private fun isGroundcoverFile(filename: String): Boolean {
         val lower = filename.toLowerCase()
         return lower.contains("grass") || lower.contains("groundcover")
-    }
-
-    private fun resourceOrder(filename: String): Pair<Int, String> {
-        val builtinIndex = BUILTIN_BSA_ORDER.indexOf(filename)
-        return if (builtinIndex >= 0) Pair(0, builtinIndex.toString().padStart(3, '0')) else Pair(1, filename.toLowerCase())
-    }
-
-    private fun preferredPluginOrder(filename: String): Int {
-        val idx = BUILTIN_PLUGIN_ORDER.indexOf(filename)
-        return if (idx >= 0) idx else Int.MAX_VALUE
     }
 
     /**
@@ -197,47 +167,11 @@ class ModsCollection(private val type: ModType,
             }
         }
 
-        when (type) {
-            ModType.Resource -> {
-                mods.sortWith(compareBy<Mod> { resourceOrder(it.filename).first }
-                    .thenBy { resourceOrder(it.filename).second })
-                mods.forEachIndexed { index, mod ->
-                    val newOrder = index + 1
-                    if (mod.order != newOrder) {
-                        mod.order = newOrder
-                        mod.dirty = true
-                    }
-                }
-                update()
-            }
-            ModType.Plugin -> {
-                val prioritized = mods.filter { preferredPluginOrder(it.filename) != Int.MAX_VALUE }
-                    .sortedBy { preferredPluginOrder(it.filename) }
-                if (prioritized.isNotEmpty()) {
-                    val prioritizedNames = prioritized.map { it.filename }.toSet()
-                    val remainder = mods.filter { !prioritizedNames.contains(it.filename) }
-                        .sortedBy { it.order }
-                    val reordered = prioritized + remainder
-                    reordered.forEachIndexed { index, mod ->
-                        val newOrder = index + 1
-                        val shouldEnable = preferredPluginOrder(mod.filename) != Int.MAX_VALUE
-                        if (mod.order != newOrder || (shouldEnable && !mod.enabled)) {
-                            mod.order = newOrder
-                            if (shouldEnable) {
-                                mod.enabled = true
-                            }
-                            mod.dirty = true
-                        }
-                    }
-                    mods.clear()
-                    mods.addAll(reordered)
-                    update()
-                } else {
-                    mods.sortBy { it.order }
-                }
-            }
-            else -> mods.sortBy { it.order }
-        }
+        // Preserve the user's persisted load order and enabled/disabled state.
+        // Older ArenaMW Android code re-prioritized a hardcoded plugin list here
+        // and force-enabled those entries each time ModsCollection was created
+        // during game launch. The database is now the source of truth.
+        mods.sortBy { it.order }
     }
 
     /**

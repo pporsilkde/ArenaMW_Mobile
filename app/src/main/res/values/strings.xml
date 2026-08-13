@@ -701,40 +701,51 @@
     </string-array>
 
     <!-- ================= Graphics preset ================= -->
-    <string name="pref_graphics_preset_category">Graphics preset</string>
+    <string name="pref_graphics_preset_category">Graphics and shadows</string>
     <string name="pref_graphics_preset">Graphics preset</string>
-    <string name="pref_graphics_preset_summary">Applies OSG threading and rendering settings tuned for different devices. Choose a quality level or a specific mobile chipset.</string>
+    <string name="pref_graphics_preset_summary">Mobile-safe preset. High/Ultra terrain and unstable post effects are intentionally excluded.</string>
+    <string name="pref_shadow_scope">Shadows</string>
+    <string name="pref_shadow_quality">Shadow map quality</string>
 
     <string-array name="pref_graphics_preset_entries">
-        <item>Auto (do not override)</item>
-        <item>Ultra</item>
-        <item>High</item>
-        <item>Medium</item>
-        <item>Low</item>
-        <item>Performance</item>
-        <item>Battery saver</item>
-        <item>Chipset: Snapdragon 8 Gen series</item>
-        <item>Chipset: Dimensity 9000 / 9200 / 9300</item>
-        <item>Chipset: Snapdragon 7 series</item>
-        <item>Chipset: Dimensity 8000 series</item>
-        <item>Chipset: Adreno low-end (SD6xx)</item>
-        <item>Chipset: Mali / Helio G-series</item>
+        <item>Auto (keep current settings)</item>
+        <item>Quality — medium terrain + object shadows</item>
+        <item>Balanced — moderate terrain + character shadows</item>
+        <item>Performance — reduced terrain, shadows off</item>
+        <item>Battery saver — minimum terrain, shadows off</item>
     </string-array>
-
     <string-array name="pref_graphics_preset_values">
         <item>auto</item>
-        <item>ultra</item>
-        <item>high</item>
-        <item>medium</item>
-        <item>low</item>
+        <item>quality</item>
+        <item>balanced</item>
         <item>performance</item>
         <item>battery</item>
-        <item>chip_sd8</item>
-        <item>chip_dim9000</item>
-        <item>chip_sd7</item>
-        <item>chip_dim8000</item>
-        <item>chip_adreno_low</item>
-        <item>chip_mali_low</item>
+    </string-array>
+
+    <string-array name="pref_shadow_scope_entries">
+        <item>From graphics preset</item>
+        <item>Off</item>
+        <item>Player + actors</item>
+        <item>Player + actors + objects</item>
+    </string-array>
+    <string-array name="pref_shadow_scope_values">
+        <item>preset</item>
+        <item>off</item>
+        <item>characters</item>
+        <item>objects</item>
+    </string-array>
+
+    <string-array name="pref_shadow_quality_entries">
+        <item>From graphics preset</item>
+        <item>512 (fast)</item>
+        <item>1024 (balanced)</item>
+        <item>2048 (quality)</item>
+    </string-array>
+    <string-array name="pref_shadow_quality_values">
+        <item>preset</item>
+        <item>512</item>
+        <item>1024</item>
+        <item>2048</item>
     </string-array>
 
     <!-- ================= Update/toolbar buttons ================= -->

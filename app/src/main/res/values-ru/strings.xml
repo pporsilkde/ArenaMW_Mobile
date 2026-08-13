@@ -480,28 +480,34 @@
         <item>ERROR</item>
     </string-array>
 
-    <!-- ================= Графический пресет ================= -->
-    <string name="pref_graphics_preset_category">Пресет графики</string>
+    <!-- ================= Графика и тени ================= -->
+    <string name="pref_graphics_preset_category">Графика и тени</string>
     <string name="pref_graphics_preset">Пресет графики</string>
-    <string name="pref_graphics_preset_summary">Применяет настройки OSG-потоков и рендера под разные устройства. Выберите уровень качества или конкретный мобильный чип.</string>
+    <string name="pref_graphics_preset_summary">Стабильные мобильные пресеты: без очень высокого ландшафта и проблемных постэффектов.</string>
+    <string name="pref_shadow_scope">Тени</string>
+    <string name="pref_shadow_quality">Качество карты теней</string>
 
     <string-array name="pref_graphics_preset_entries">
-        <item>Авто (не изменять)</item>
-        <item>Ультра</item>
-        <item>Высокое</item>
-        <item>Среднее</item>
-        <item>Низкое</item>
-        <item>Производительность</item>
-        <item>Энергосбережение</item>
-        <item>Чип: Snapdragon 8 Gen</item>
-        <item>Чип: Dimensity 9000 / 9200 / 9300</item>
-        <item>Чип: Snapdragon 7-серии</item>
-        <item>Чип: Dimensity 8000-серии</item>
-        <item>Чип: Adreno начальный (SD6xx)</item>
-        <item>Чип: Mali / Helio G-серии</item>
+        <item>Авто (сохранить текущие настройки)</item>
+        <item>Качество — средний ландшафт + тени объектов</item>
+        <item>Баланс — умеренный ландшафт + тени персонажей</item>
+        <item>Производительность — сниженный ландшафт, тени выкл.</item>
+        <item>Энергосбережение — минимум ландшафта, тени выкл.</item>
     </string-array>
 
-    <!-- values массив берётся из values/strings.xml (там технические ключи) -->
+    <string-array name="pref_shadow_scope_entries">
+        <item>Как в пресете графики</item>
+        <item>Выключены</item>
+        <item>Игрок + персонажи</item>
+        <item>Игрок + персонажи + объекты</item>
+    </string-array>
+
+    <string-array name="pref_shadow_quality_entries">
+        <item>Как в пресете графики</item>
+        <item>512 (быстро)</item>
+        <item>1024 (баланс)</item>
+        <item>2048 (качество)</item>
+    </string-array>
 
     <!-- ================= Кнопки обновления ================= -->
     <string name="btn_update_desc">Скачать обновление</string>
