@@ -701,18 +701,16 @@
     </string-array>
 
     <!-- ================= Graphics preset ================= -->
-    <string name="pref_graphics_preset_category">Graphics and shadows</string>
+    <string name="pref_graphics_preset_category">Graphics</string>
     <string name="pref_graphics_preset">Graphics preset</string>
-    <string name="pref_graphics_preset_summary">Mobile-safe preset. High/Ultra terrain and unstable post effects are intentionally excluded.</string>
-    <string name="pref_shadow_scope">Shadows</string>
-    <string name="pref_shadow_quality">Shadow map quality</string>
+    <string name="pref_graphics_preset_summary">Mobile-safe preset. Texture/splat quality stays intact; performance modes reduce distance, LOD and paging instead.</string>
 
     <string-array name="pref_graphics_preset_entries">
         <item>Auto (keep current settings)</item>
-        <item>Quality — medium terrain + object shadows</item>
-        <item>Balanced — moderate terrain + character shadows</item>
-        <item>Performance — reduced terrain, shadows off</item>
-        <item>Battery saver — minimum terrain, shadows off</item>
+        <item>Quality — medium terrain, full texture quality</item>
+        <item>Balanced — moderate terrain, full texture quality</item>
+        <item>Performance — reduced distance/LOD, full texture quality</item>
+        <item>Battery saver — minimum distance/LOD, full texture quality</item>
     </string-array>
     <string-array name="pref_graphics_preset_values">
         <item>auto</item>
@@ -720,32 +718,6 @@
         <item>balanced</item>
         <item>performance</item>
         <item>battery</item>
-    </string-array>
-
-    <string-array name="pref_shadow_scope_entries">
-        <item>From graphics preset</item>
-        <item>Off</item>
-        <item>Player + actors</item>
-        <item>Player + actors + objects</item>
-    </string-array>
-    <string-array name="pref_shadow_scope_values">
-        <item>preset</item>
-        <item>off</item>
-        <item>characters</item>
-        <item>objects</item>
-    </string-array>
-
-    <string-array name="pref_shadow_quality_entries">
-        <item>From graphics preset</item>
-        <item>512 (fast)</item>
-        <item>1024 (balanced)</item>
-        <item>2048 (quality)</item>
-    </string-array>
-    <string-array name="pref_shadow_quality_values">
-        <item>preset</item>
-        <item>512</item>
-        <item>1024</item>
-        <item>2048</item>
     </string-array>
 
     <!-- ================= Update/toolbar buttons ================= -->

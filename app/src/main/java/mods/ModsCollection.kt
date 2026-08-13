@@ -175,6 +175,42 @@ class ModsCollection(private val type: ModType,
     }
 
     /**
+     * Applies an externally persisted order (build.ini). When authoritative is true,
+     * entries not listed are disabled instead of being silently merged back in.
+     * Matching is case-insensitive, while the on-disk filename spelling is preserved.
+     */
+    fun applyOrderedSelection(ordered: List<String>, authoritative: Boolean) {
+        val rank = linkedMapOf<String, Int>()
+        ordered.forEachIndexed { index, name ->
+            rank[name.toLowerCase()] = index + 1
+        }
+
+        var nextOrder = ordered.size + 1
+        mods.forEach { mod ->
+            val wantedOrder = rank[mod.filename.toLowerCase()]
+            if (wantedOrder != null) {
+                if (!mod.enabled || mod.order != wantedOrder) {
+                    mod.enabled = true
+                    mod.order = wantedOrder
+                    mod.dirty = true
+                }
+            } else {
+                if (authoritative && mod.enabled) {
+                    mod.enabled = false
+                    mod.dirty = true
+                }
+                if (mod.order < nextOrder) {
+                    mod.order = nextOrder
+                    mod.dirty = true
+                }
+                nextOrder += 1
+            }
+        }
+        mods.sortBy { it.order }
+        update()
+    }
+
+    /**
      * Performs DB updates for all mods marked as dirty
      */
     fun update() {

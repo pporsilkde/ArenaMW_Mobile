@@ -46,6 +46,7 @@ import com.libopenmw.openmw.R
 import constants.Constants
 import file.GameInstaller
 import file.GraphicsPresets
+import file.BuildManifestManager
 import file.UpdateDownloader
 import android.widget.ImageButton
 
@@ -216,6 +217,10 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
+        // Reconcile the portable build manifest before checking enabled content.
+        // This makes an externally edited build.ini authoritative even before Play.
+        BuildManifestManager.initializeIfMissing(this, File(inst.findDataFiles()))
+
         // Second, check if user has at least one mod enabled
         val plugins = ModsCollection(ModType.Plugin, inst.findDataFiles(),
             ModsDatabaseOpenHelper.getInstance(this))
@@ -287,56 +292,42 @@ class MainActivity : AppCompatActivity() {
      * Generates openmw.cfg using values from openmw.base.cfg combined with mod manager settings
      */
     private fun generateOpenmwCfg() {
-        // contents of openmw.base.cfg
         val base: String
-        // contents of openmw.fallback.cfg
         val fallback: String
-
-        // try to read the files
         try {
             base = File(Constants.OPENMW_BASE_CFG).readText()
-            // TODO: support user custom options
             fallback = File(Constants.OPENMW_FALLBACK_CFG).readText()
         } catch (e: IOException) {
             Log.e(TAG, "Failed to read openmw.base.cfg or openmw.fallback.cfg", e)
             return
         }
 
-        val dataFiles = GameInstaller.getDataFiles(this)
-        val db = ModsDatabaseOpenHelper.getInstance(this)
-        val resources = ModsCollection(ModType.Resource, dataFiles, db)
-        val plugins = ModsCollection(ModType.Plugin, dataFiles, db)
-        val groundcovers = ModsCollection(ModType.Groundcover, dataFiles, db)
+        val dataDir = File(GameInstaller.getDataFiles(this))
+        // PC launcher semantics: re-read build.ini before every launch so external
+        // portable edits are respected. If absent, create it once from launcher state.
+        val manifest = BuildManifestManager.loadIntoLauncher(this, dataDir)
+            ?: BuildManifestManager.initializeIfMissing(this, dataDir)
 
         try {
-            // generate final output.cfg
             var output = base + "\n" + fallback + "\n"
 
-            // output resources
-            // The mod database is authoritative. Do not re-sort or re-enable
-            // entries during launch: what the user configured in the Mods screen
-            // is exactly what is written to openmw.cfg.
-            resources.mods
-                .filter { it.enabled }
-                .sortedBy { it.order }
-                .forEach { output += "fallback-archive=${it.filename}\n" }
+            // A present build.ini owns content exactly as written, including an empty list.
+            // Archives match PC behavior: if the manifest has none, retain DB/fallback BSA state.
+            if (manifest.archives.isNotEmpty()) {
+                manifest.archives.forEach { output += "fallback-archive=$it\n" }
+            } else {
+                val db = ModsDatabaseOpenHelper.getInstance(this)
+                ModsCollection(ModType.Resource, dataDir.absolutePath, db).mods
+                    .filter { it.enabled }.sortedBy { it.order }
+                    .forEach { output += "fallback-archive=${it.filename}\n" }
+            }
 
-            // output plugins in the user's persisted load order
-            plugins.mods
-                .filter { it.enabled }
-                .sortedBy { it.order }
-                .forEach { output += "content=${it.filename}\n" }
+            manifest.contentFiles.forEach { output += "content=$it\n" }
+            manifest.groundcoverFiles.forEach { output += "groundcover=$it\n" }
 
-            // output groundcover
-            groundcovers.mods
-                .filter { it.enabled }
-                .sortedBy { it.order }
-                .forEach { output += "groundcover=${it.filename}\n" }
-
-            // write everything to openmw.cfg
             File(Constants.OPENMW_CFG).writeText(output)
         } catch (e: IOException) {
-            Log.e(TAG, "Failed to generate openmw.cfg.", e)
+            Log.e(TAG, "Failed to generate openmw.cfg from build.ini.", e)
         }
     }
 
@@ -471,11 +462,16 @@ class MainActivity : AppCompatActivity() {
                     reinstallStaticFiles()
                 }
 
-                val inst = GameInstaller(prefs.getString("game_files", "")!!)
+                var inst = GameInstaller(prefs.getString("game_files", "")!!)
+                val launchDataDir = File(inst.findDataFiles())
+                BuildManifestManager.initializeIfMissing(this, launchDataDir)
 
-                // Regenerate the fallback file in case user edits their Morrowind.ini
+                // build.ini may normalize a Data Files selection back to the game root or
+                // resolve a portable relative data-path. Recreate installer after import.
+                inst = GameInstaller(prefs.getString("game_files", "")!!)
+
+                // Regenerate the fallback file in case user edits their Morrowind.ini.
                 inst.convertIni(prefs.getString("pref_encoding", GameInstaller.DEFAULT_CHARSET_PREF)!!)
-
                 generateOpenmwCfg()
 
                 // openmw.cfg: data, resources
@@ -557,7 +553,10 @@ class MainActivity : AppCompatActivity() {
                 file.Writer.write(cfg, "Terrain", "distant terrain", boolPref("pref_distant"))
                 file.Writer.write(cfg, "Terrain", "lod factor", prefs.getString("pref_lod_factor", "0.4")!!)
                 file.Writer.write(cfg, "Terrain", "vertex lod mod", prefs.getString("pref_vertex_lod_mod", "-2")!!)
-                file.Writer.write(cfg, "Terrain", "composite map level", prefs.getString("pref_composite_map_level", "-3")!!)
+                // Keep the native 1024 composite resolution. The graphics preset below may
+                // only change composite map level in the safe -3..-1 range.
+                file.Writer.write(cfg, "Terrain", "composite map level", "-3")
+                file.Writer.write(cfg, "Terrain", "composite map resolution", "1024")
                 file.Writer.write(cfg, "Terrain", "object paging", boolPref("pref_object_paging"))
                 file.Writer.write(cfg, "Terrain", "object paging merge factor", prefs.getString("pref_object_paging_merge_factor", "100000")!!)
                 file.Writer.write(cfg, "Terrain", "object paging min size", prefs.getString("pref_object_paging_min_size", "1")!!)
@@ -668,32 +667,11 @@ class MainActivity : AppCompatActivity() {
                     file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Terrain", "object paging",     if (preset.objectPaging) "true" else "false")
                     file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Terrain", "distant terrain",   if (preset.distantTerrain) "true" else "false")
 
-                    // Shadows are now part of the mobile graphics preset.
-                    val presetShadowOn = preset.shadowScope != "off"
-                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Shadows", "enable shadows", if (presetShadowOn) "true" else "false")
-                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Shadows", "player shadows", if (presetShadowOn) "true" else "false")
-                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Shadows", "actor shadows", if (preset.shadowScope == "characters" || preset.shadowScope == "objects") "true" else "false")
-                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Shadows", "object shadows", if (preset.shadowScope == "objects") "true" else "false")
-                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Shadows", "terrain shadows", "false")
-                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Shadows", "enable indoor shadows", "false")
-                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Shadows", "shadow map resolution", preset.shadowResolution.toString())
+                    // Do not use GL4ES texture shrinking. Keep composite resolution at 1024;
+                    // only the composite map level changes between -3 and -1.
+                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Terrain", "composite map level", preset.compositeMapLevel.toString())
+                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Terrain", "composite map resolution", preset.compositeMapResolution.toString())
                 }
-
-                // Explicit launcher shadow override. "preset" keeps the values from
-                // the selected graphics preset (or the existing settings in Auto).
-                val shadowScope = prefs.getString("pref_shadow_scope", "preset") ?: "preset"
-                if (shadowScope != "preset") {
-                    val enabled = shadowScope != "off"
-                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Shadows", "enable shadows", if (enabled) "true" else "false")
-                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Shadows", "player shadows", if (enabled) "true" else "false")
-                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Shadows", "actor shadows", if (shadowScope == "characters" || shadowScope == "objects") "true" else "false")
-                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Shadows", "object shadows", if (shadowScope == "objects") "true" else "false")
-                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Shadows", "terrain shadows", "false")
-                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Shadows", "enable indoor shadows", "false")
-                }
-                val shadowQuality = prefs.getString("pref_shadow_quality", "preset") ?: "preset"
-                if (shadowQuality != "preset")
-                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Shadows", "shadow map resolution", shadowQuality)
 
                 // Android complex-water V3. Keep the stable object/terrain compatibility
                 // renderer from V2, but deliberately re-enable ArenaMW's complex PBR water
@@ -732,18 +710,6 @@ class MainActivity : AppCompatActivity() {
                     // wave-height slider starts at the calmer 0.34 value tested on-device.
                     file.Writer.write(androidSettings, "Water", "rtt size", "256")
                     file.Writer.write(androidSettings, "Water", "wave strength", "0.34")
-
-                    // Seed only the non-user-facing mobile shadow internals here.
-                    // Shadow enable/scope and map resolution are owned by the launcher
-                    // selectors above, so the first-run migration must never overwrite
-                    // the user's selected preset/override.
-                    file.Writer.write(androidSettings, "Shadows", "number of shadow maps", "1")
-                    file.Writer.write(androidSettings, "Shadows", "maximum shadow map distance", "4096")
-                    file.Writer.write(androidSettings, "Shadows", "shadow fade start", "0.82")
-                    file.Writer.write(androidSettings, "Shadows", "allow shadow map overlap", "false")
-                    file.Writer.write(androidSettings, "Shadows", "terrain shadows", "false")
-                    file.Writer.write(androidSettings, "Shadows", "enable indoor shadows", "false")
-                    file.Writer.write(androidSettings, "Shadows", "enhanced filtering", "false")
 
                     // Reduce streaming hitches without spawning an excessive number of
                     // competing worker threads on a phone. These are only seeded once.

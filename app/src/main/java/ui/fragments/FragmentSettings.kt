@@ -37,6 +37,7 @@ import androidx.core.content.ContextCompat
 import com.codekidlabs.storagechooser.StorageChooser
 import com.libopenmw.openmw.R
 import file.GameInstaller
+import file.BuildManifestManager
 
 import ui.activity.ConfigureControls
 import ui.activity.MainActivity
@@ -105,7 +106,14 @@ class FragmentSettings : PreferenceFragment(), OnSharedPreferenceChangeListener 
             if (!inst.convertIni(sharedPref.getString("pref_encoding", GameInstaller.DEFAULT_CHARSET_PREF)!!)) {
                 showError(R.string.data_error_title, R.string.ini_error_message)
             } else {
-                gameFiles = path
+                val root = BuildManifestManager.normalizeGameRoot(path)
+                gameFiles = root.absolutePath
+                val dataDir = BuildManifestManager.dataDirForGamePath(path)
+                if (dataDir.isDirectory) {
+                    // PC launcher semantics: existing build.ini is authoritative;
+                    // otherwise create it once using canonical content order.
+                    BuildManifestManager.initializeIfMissing(activity, dataDir)
+                }
             }
         } else {
             showError(R.string.data_error_title, R.string.data_error_message,

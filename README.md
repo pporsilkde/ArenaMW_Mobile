@@ -60,3 +60,7 @@ V12 removes the unstable HDR/Bloom/SSR/SMAA Android patch chain, fixes the mobil
 V13 rebases the Android water patches onto ArenaMW NEW CUMULATIVE 002
 (NPC animations/dialogue facing/water shader selector) and fixes launcher icons
 for all Android product flavors. See `CUMULATIVE002_ADAPT_V13_RU.md`.
+
+## V15 / Cumulative 004
+
+V15 rebases the Android builder on NEW CUMULATIVE 004, removes aggressive GL4ES texture shrink from Battery Saver, keeps terrain composite/splat quality at -1/2048 for all launcher presets, removes all shadow controls/writes from the Android launcher, and moves shadow tuning back to the in-game settings only. The incremental ArenaMW cache now fingerprints the Android patchset so a changed patch can reuse the previous binary tree safely. See `C004_ANDROID_OPTIMIZED_V15_RU.md`.

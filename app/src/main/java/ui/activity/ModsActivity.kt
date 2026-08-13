@@ -28,6 +28,7 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import file.GameInstaller
+import file.BuildManifestManager
 import kotlinx.android.synthetic.main.activity_mods.*
 import mods.*
 import android.view.MenuItem
@@ -56,6 +57,10 @@ class ModsActivity : AppCompatActivity() {
             override fun onTabReselected(tab: TabLayout.Tab) {
             }
         })
+
+        // If a portable build.ini exists, it owns enabled content and exact order.
+        val dataDir = java.io.File(GameInstaller.getDataFiles(this))
+        BuildManifestManager.loadIntoLauncher(this, dataDir)
 
         // Set up adapters for the lists
         setupModList(findViewById(R.id.list_mods), ModType.Plugin)
@@ -86,6 +91,18 @@ class ModsActivity : AppCompatActivity() {
         adapter.touchHelper = touchHelper
 
         list.adapter = adapter
+    }
+
+    override fun onPause() {
+        // Same behavior as PC launcher writeSettings(): persist deliberate Data Files
+        // changes back to build.ini, including exact enabled order and groundcover/BSA.
+        try {
+            val dataDir = java.io.File(GameInstaller.getDataFiles(this))
+            BuildManifestManager.saveFromLauncher(this, dataDir)
+        } catch (_: Exception) {
+            // Do not make leaving the Mods screen fatal; launch path retries the save.
+        }
+        super.onPause()
     }
 
     /**

@@ -130,12 +130,10 @@ class GameActivity : SDLActivity() {
             Os.setenv("LIBGL_LOGSHADERERROR", "1", true)
             Os.setenv("OPENMW_DISABLE_LOGS", "0", true)
 
-            // ── Texture shrink из настроек ────────────────────────────────────
-            val shrinkLevel = when {
-                preset?.osgThreading == "SingleThreaded" -> "6"  // battery preset
-                else -> "0"
-            }
-            if (shrinkLevel != "0") Os.setenv("LIBGL_SHRINK", shrinkLevel, true)
+            // Never use GL4ES texture shrink for graphics presets. It destroys
+            // terrain splat/material clarity, especially in Battery Saver.
+            // Performance presets reduce LOD/distance/threading instead.
+            Os.setenv("LIBGL_SHRINK", "0", true)
 
         } catch (e: ErrnoException) {
             Log.e("OpenMW", "Failed setting NG-GL4ES environment variables.")

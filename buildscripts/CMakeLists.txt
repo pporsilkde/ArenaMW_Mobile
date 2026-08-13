@@ -497,6 +497,8 @@ set(OPENMW_COMMON
 )
 
 set(ARENAMW_PATCH
+	# Pin/rebase the engine source to the supplied NEW CUMULATIVE 004 level first.
+	sh ${CMAKE_SOURCE_DIR}/patches/openmw/apply-c004-upstream-overlay.sh <SOURCE_DIR> &&
 	# Keep only the Android compatibility patches used by the original builder.
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/01-loadingscreen-disable-for-now.patch &&
 	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/02-windowmanagerimp-always-show-mouse-when-possible-pat.patch &&
@@ -510,7 +512,7 @@ set(ARENAMW_PATCH
 	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/10-android-complex-water-geometry-shadows-v6.patch &&
 	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/11-android-gles-shadow-matrix-v7.patch &&
 	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/12-android-mobile-tuning-v8.patch &&
-	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/16-android-stable-settings-ui-v12.patch &&
+	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/16-android-stable-settings-ui-c004-v15.patch &&
 	cp ${CMAKE_SOURCE_DIR}/patches/openmw/android_main.cpp <SOURCE_DIR>/apps/openmw/android_main.cpp &&
 	sh ${CMAKE_SOURCE_DIR}/patches/openmw/patch-sse2neon.sh <SOURCE_DIR>
 )

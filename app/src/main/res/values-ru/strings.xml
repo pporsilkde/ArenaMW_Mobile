@@ -480,33 +480,17 @@
         <item>ERROR</item>
     </string-array>
 
-    <!-- ================= Графика и тени ================= -->
-    <string name="pref_graphics_preset_category">Графика и тени</string>
+    <!-- ================= Графика ================= -->
+    <string name="pref_graphics_preset_category">Графика</string>
     <string name="pref_graphics_preset">Пресет графики</string>
-    <string name="pref_graphics_preset_summary">Стабильные мобильные пресеты: без очень высокого ландшафта и проблемных постэффектов.</string>
-    <string name="pref_shadow_scope">Тени</string>
-    <string name="pref_shadow_quality">Качество карты теней</string>
+    <string name="pref_graphics_preset_summary">Мобильные пресеты без ухудшения текстур и сплешей: производительность регулируется дальностью, LOD и paging.</string>
 
     <string-array name="pref_graphics_preset_entries">
         <item>Авто (сохранить текущие настройки)</item>
-        <item>Качество — средний ландшафт + тени объектов</item>
-        <item>Баланс — умеренный ландшафт + тени персонажей</item>
-        <item>Производительность — сниженный ландшафт, тени выкл.</item>
-        <item>Энергосбережение — минимум ландшафта, тени выкл.</item>
-    </string-array>
-
-    <string-array name="pref_shadow_scope_entries">
-        <item>Как в пресете графики</item>
-        <item>Выключены</item>
-        <item>Игрок + персонажи</item>
-        <item>Игрок + персонажи + объекты</item>
-    </string-array>
-
-    <string-array name="pref_shadow_quality_entries">
-        <item>Как в пресете графики</item>
-        <item>512 (быстро)</item>
-        <item>1024 (баланс)</item>
-        <item>2048 (качество)</item>
+        <item>Качество — средний ландшафт, полное качество текстур</item>
+        <item>Баланс — умеренный ландшафт, полное качество текстур</item>
+        <item>Производительность — сниженные дальность/LOD, полное качество текстур</item>
+        <item>Энергосбережение — минимум дальности/LOD, полное качество текстур</item>
     </string-array>
 
     <!-- ================= Кнопки обновления ================= -->

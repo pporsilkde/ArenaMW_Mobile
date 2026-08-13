@@ -1,8 +1,7 @@
 /*
     ArenaMW Android graphics presets.
-    Mobile-safe V12 intentionally caps terrain quality and keeps expensive
-    post-processing out of the preset system. Shadows are part of the preset,
-    but the launcher also exposes an explicit shadow override.
+    Mobile-safe V15.1 keeps composite resolution at 1024 and scales only
+    composite map level from -3 to -1 across presets. Shadow configuration belongs to the in-game settings only.
 */
 package file
 
@@ -23,12 +22,12 @@ object GraphicsPresets {
         val perPixelLighting: Boolean,
         val objectPaging: Boolean,
         val distantTerrain: Boolean,
-        val shadowScope: String,
-        val shadowResolution: Int
+        val compositeMapLevel: Int,
+        val compositeMapResolution: Int
     )
 
-    // No Ultra/Very High mobile landscape modes. Medium (LOD 0.80 / 2048-ish
-    // composite path in ArenaMW) is the upper bound for Android.
+    // No Ultra/Very High mobile landscape modes. Composite resolution stays 1024;
+    // presets scale composite level from -3 (fast) to -1 (quality).
     val PRESETS: Map<String, Preset> = mapOf(
         "quality" to Preset(
             osgThreading = "DrawThreadPerContext",
@@ -38,7 +37,7 @@ object GraphicsPresets {
             asyncNumThreads = 2, targetFramerate = 60,
             shadersOn = true, perPixelLighting = false,
             objectPaging = true, distantTerrain = true,
-            shadowScope = "objects", shadowResolution = 1024
+            compositeMapLevel = -1, compositeMapResolution = 1024
         ),
         "balanced" to Preset(
             osgThreading = "DrawThreadPerContext",
@@ -48,7 +47,7 @@ object GraphicsPresets {
             asyncNumThreads = 2, targetFramerate = 60,
             shadersOn = true, perPixelLighting = false,
             objectPaging = true, distantTerrain = false,
-            shadowScope = "characters", shadowResolution = 512
+            compositeMapLevel = -2, compositeMapResolution = 1024
         ),
         "performance" to Preset(
             osgThreading = "CullDrawThreadPerContext",
@@ -58,7 +57,7 @@ object GraphicsPresets {
             asyncNumThreads = 1, targetFramerate = 45,
             shadersOn = true, perPixelLighting = false,
             objectPaging = true, distantTerrain = false,
-            shadowScope = "off", shadowResolution = 512
+            compositeMapLevel = -3, compositeMapResolution = 1024
         ),
         "battery" to Preset(
             osgThreading = "SingleThreaded",
@@ -68,7 +67,7 @@ object GraphicsPresets {
             asyncNumThreads = 1, targetFramerate = 30,
             shadersOn = true, perPixelLighting = false,
             objectPaging = false, distantTerrain = false,
-            shadowScope = "off", shadowResolution = 512
+            compositeMapLevel = -3, compositeMapResolution = 1024
         )
     )
 
