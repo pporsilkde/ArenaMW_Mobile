@@ -506,6 +506,7 @@ set(ARENAMW_PATCH
 	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/06-android-safe-render-v1.patch &&
 	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/07-android-complex-water-v3.patch &&
 	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/08-android-gles-shader-compat-v4.patch &&
+	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/09-android-complex-water-gles-compat-v5.patch &&
 	cp ${CMAKE_SOURCE_DIR}/patches/openmw/android_main.cpp <SOURCE_DIR>/apps/openmw/android_main.cpp &&
 	sh ${CMAKE_SOURCE_DIR}/patches/openmw/patch-sse2neon.sh <SOURCE_DIR>
 )
