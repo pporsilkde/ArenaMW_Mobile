@@ -101,14 +101,15 @@ class GameActivity : SDLActivity() {
             Os.setenv("OSG_COP_VALUE", "0x00000100", true)
             Os.setenv("OSG_NOTIFY_LEVEL", "WARN", true)
 
-            // ── OSG Threading из отдельного профиля OSG ─────────────────────
-            val osgPreset = GraphicsPresets.getOsgPreset(prefs!!)
-            Os.setenv("OSG_MAX_PAGEDLOD", osgPreset.maxPagedLOD.toString(), true)
-            Os.setenv("OSG_THREADING", osgPreset.osgThreading, true)
-            Os.setenv("OSG_NUM_DATABASE_THREADS", osgPreset.dbThreads.toString(), true)
-            Os.setenv("OSG_NUM_COMPILE_THREADS", osgPreset.compileThreads.toString(), true)
-            Os.setenv("OSG_DATABASE_PAGER_THREADS", osgPreset.pagerThreads.toString(), true)
-            Os.setenv("OSG_SHADER_CACHE_ENABLED", "1", true)
+            // ── OSG Threading из preset ───────────────────────────────────────
+            val presetId = prefs!!.getString("pref_graphics_preset", "auto")
+            val preset = GraphicsPresets.resolve(presetId)
+            Os.setenv("OSG_MAX_PAGEDLOD", preset?.maxPagedLOD?.toString() ?: "6", true)
+            Os.setenv("OSG_THREADING", preset?.osgThreading ?: "DrawThreadPerContext", true)
+            Os.setenv("OSG_NUM_DATABASE_THREADS", preset?.dbThreads?.toString() ?: "3", true)
+            Os.setenv("OSG_NUM_COMPILE_THREADS", preset?.compileThreads?.toString() ?: "2", true)
+            Os.setenv("OSG_DATABASE_PAGER_THREADS", preset?.pagerThreads?.toString() ?: "3", true)
+            Os.setenv("OSG_SHADER_CACHE_ENABLED", if (preset?.shaderCache != false) "1" else "0", true)
 
             // ── NG-GL4ES специфичные переменные ──────────────────────────────
             // Keep the known-working simple converter for the general ArenaMW 0.47 renderer.
@@ -129,10 +130,12 @@ class GameActivity : SDLActivity() {
             Os.setenv("LIBGL_LOGSHADERERROR", "1", true)
             Os.setenv("OPENMW_DISABLE_LOGS", "0", true)
 
-            // Never use GL4ES texture shrink for graphics presets. It destroys
-            // terrain splat/material clarity, especially in Battery Saver.
-            // Performance presets reduce LOD/distance/threading instead.
-            Os.setenv("LIBGL_SHRINK", "0", true)
+            // ── Texture shrink из настроек ────────────────────────────────────
+            val shrinkLevel = when {
+                preset?.osgThreading == "SingleThreaded" -> "6"  // battery preset
+                else -> "0"
+            }
+            if (shrinkLevel != "0") Os.setenv("LIBGL_SHRINK", shrinkLevel, true)
 
         } catch (e: ErrnoException) {
             Log.e("OpenMW", "Failed setting NG-GL4ES environment variables.")

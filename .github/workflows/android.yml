@@ -139,7 +139,6 @@ jobs:
           key: ${{ env.ARENAMW_INCREMENTAL_CACHE_EPOCH }}-${{ hashFiles('buildscripts/build.sh', 'buildscripts/CMakeLists.txt', 'buildscripts/include/version.sh', 'buildscripts/patches/openmw/**', '.github/workflows/android.yml') }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
             ${{ env.ARENAMW_INCREMENTAL_CACHE_EPOCH }}-${{ hashFiles('buildscripts/build.sh', 'buildscripts/CMakeLists.txt', 'buildscripts/include/version.sh', 'buildscripts/patches/openmw/**', '.github/workflows/android.yml') }}-
-            ${{ env.ARENAMW_INCREMENTAL_CACHE_EPOCH }}-
 
       # ExternalProject keeps the checked-out AMW repository inside arenamw-prefix.
       # If upstream/main did not move, leave that tree completely untouched so its
@@ -172,20 +171,15 @@ jobs:
           fi
 
           PATCH_STAMP="$STAMP/arenamw-patch"
-          PATCH_HASH_FILE="$STAMP/arenamw-android-patchset.sha256"
-          CURRENT_PATCH_HASH="$(find buildscripts/patches/openmw -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | awk '{print $1}')"
-          STORED_PATCH_HASH="$(cat "$PATCH_HASH_FILE" 2>/dev/null || true)"
           echo "==> Cached ArenaMW base: $LOCAL_SHA"
           echo "==> Upstream ArenaMW base: $REMOTE_SHA"
-          echo "==> Cached Android patchset: ${STORED_PATCH_HASH:-none}"
-          echo "==> Current Android patchset: $CURRENT_PATCH_HASH"
 
-          if [[ "$LOCAL_SHA" == "$REMOTE_SHA" && -f "$PATCH_STAMP" && "$STORED_PATCH_HASH" == "$CURRENT_PATCH_HASH" ]]; then
-            echo '==> ArenaMW source and Android patchset are unchanged; preserving source/object mtimes for a true incremental build'
+          if [[ "$LOCAL_SHA" == "$REMOTE_SHA" && -f "$PATCH_STAMP" ]]; then
+            echo '==> ArenaMW source is unchanged; preserving source/object mtimes for a true incremental build'
             exit 0
           fi
 
-          echo '==> ArenaMW source or Android patchset changed; updating checkout without deleting the build tree'
+          echo '==> ArenaMW source or patch state changed; updating checkout without deleting the build tree'
           # Android compatibility patches leave the checkout dirty by design. Revert
           # them before moving to the new upstream commit, then let ExternalProject
           # apply them once again via the invalidated patch stamp.
@@ -245,17 +239,6 @@ jobs:
       - name: Build ArenaMW native arm64
         working-directory: buildscripts
         run: bash ./build.sh --arch arm64 --ccache --release --client-only
-
-      - name: Record Android patch fingerprint
-        if: always()
-        shell: bash
-        run: |
-          STAMP="buildscripts/build/arm64/arenamw-prefix/src/arenamw-stamp"
-          if [[ -f "$STAMP/arenamw-patch" ]]; then
-            CURRENT_PATCH_HASH="$(find buildscripts/patches/openmw -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | awk '{print $1}')"
-            printf '%s\n' "$CURRENT_PATCH_HASH" > "$STAMP/arenamw-android-patchset.sha256"
-            echo "==> Recorded Android patchset $CURRENT_PATCH_HASH"
-          fi
 
       # GitHub cache entries are immutable, therefore every run writes a new key
       # and the next run restores the newest compatible prefix via restore-keys.

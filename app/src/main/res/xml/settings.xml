@@ -3,7 +3,6 @@
 	<PreferenceCategory android:title="@string/general_settings" android:key="general_settings">
 		<Preference android:title="@string/game_files" android:key="game_files" />
 		<Preference android:title="@string/mods" android:key="pref_mods" />
-		<Preference android:title="@string/graphics_settings_button" android:key="pref_graphics_settings" android:summary="@string/graphics_settings_summary" />
 	</PreferenceCategory>
 	<PreferenceCategory android:title="@string/pref_ui">
 		<ListPreference android:entries="@array/pref_encoding_entries" android:title="@string/pref_encoding" android:key="pref_encoding" android:summary="%s" android:defaultValue="@string/pref_encoding_default" android:dialogTitle="@string/pref_encoding" android:entryValues="@array/pref_encoding_values" />
@@ -16,6 +15,32 @@
 	</PreferenceCategory>
 	<PreferenceCategory android:title="@string/pref_menu_gui">
 		<EditTextPreference android:textStyle="bold" android:hint="1.5" android:title="@string/pref_uiScaling" android:key="pref_uiScaling" android:dialogTitle="@string/pref_uiScaling" android:inputType="numberDecimal" />
+	</PreferenceCategory>
+	<PreferenceCategory android:title="@string/pref_graphics_preset_category">
+		<ListPreference
+			android:title="@string/pref_graphics_preset"
+			android:key="pref_graphics_preset"
+			android:summary="%s"
+			android:dialogTitle="@string/pref_graphics_preset"
+			android:defaultValue="balanced"
+			android:entries="@array/pref_graphics_preset_entries"
+			android:entryValues="@array/pref_graphics_preset_values" />
+		<ListPreference
+			android:title="@string/pref_shadow_scope"
+			android:key="pref_shadow_scope"
+			android:summary="%s"
+			android:dialogTitle="@string/pref_shadow_scope"
+			android:defaultValue="preset"
+			android:entries="@array/pref_shadow_scope_entries"
+			android:entryValues="@array/pref_shadow_scope_values" />
+		<ListPreference
+			android:title="@string/pref_shadow_quality"
+			android:key="pref_shadow_quality"
+			android:summary="%s"
+			android:dialogTitle="@string/pref_shadow_quality"
+			android:defaultValue="preset"
+			android:entries="@array/pref_shadow_quality_entries"
+			android:entryValues="@array/pref_shadow_quality_values" />
 	</PreferenceCategory>
 	<PreferenceCategory android:title="@string/pref_advanced">
 		<ListPreference android:entries="@array/pref_debug_level_entries" android:title="@string/pref_debug_level" android:key="pref_debug_level" android:summary="%s" android:defaultValue="@string/pref_debug_level_default" android:dialogTitle="@string/pref_debug_level" android:entryValues="@array/pref_debug_level_values" />

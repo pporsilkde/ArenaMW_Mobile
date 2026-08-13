@@ -32,9 +32,7 @@ import java.nio.charset.Charset
  */
 class GameInstaller(path: String) {
 
-    private val selected = File(path).absoluteFile
-    val dir: File = if (selected.name.equals(DATA_NAME, ignoreCase = true))
-        (selected.parentFile ?: selected) else selected
+    val dir = File(path)
 
     /**
      * Lists the root directory and finds a file or directory named "name",
@@ -68,12 +66,7 @@ class GameInstaller(path: String) {
      * Returns path to the Data Files directory as a string
      */
     fun findDataFiles(): String {
-        if (selected.name.equals(DATA_NAME, ignoreCase = true) && selected.isDirectory)
-            return selected.absolutePath
-        val match = dir.listFiles()?.firstOrNull {
-            it.isDirectory && it.name.equals(DATA_NAME, ignoreCase = true)
-        }
-        return (match ?: File(dir, DATA_NAME)).absolutePath
+        return File(dir, DATA_NAME).absolutePath
     }
 
     /**

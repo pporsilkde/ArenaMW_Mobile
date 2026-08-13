@@ -54,13 +54,3 @@ HDR, Bloom, SSR и SMAA доступны как opt-in эффекты. Они в
 ## ArenaMW Android V12 stable profile
 
 V12 removes the unstable HDR/Bloom/SSR/SMAA Android patch chain, fixes the mobile settings UI in both layout and C++/HPP logic, caps terrain detail at Medium, adds launcher shadow controls, preserves mod enable/order state, and uses the OpenMW launcher icon. See `STABLE_ANDROID_UI_MODS_V12_RU.md`.
-
-## ArenaMW Android V13
-
-V13 rebases the Android water patches onto ArenaMW NEW CUMULATIVE 002
-(NPC animations/dialogue facing/water shader selector) and fixes launcher icons
-for all Android product flavors. See `CUMULATIVE002_ADAPT_V13_RU.md`.
-
-## V15 / Cumulative 004
-
-V15 rebases the Android builder on NEW CUMULATIVE 004, removes aggressive GL4ES texture shrink from Battery Saver, keeps terrain composite/splat quality at -1/2048 for all launcher presets, removes all shadow controls/writes from the Android launcher, and moves shadow tuning back to the in-game settings only. The incremental ArenaMW cache now fingerprints the Android patchset so a changed patch can reuse the previous binary tree safely. See `C004_ANDROID_OPTIMIZED_V15_RU.md`.
