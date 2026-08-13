@@ -148,6 +148,11 @@ open class OscElement(
 
     open fun getVirtualHeight(): Int = size
 
+    // Regular buttons use one uniform scale so square icons stay square. Large
+    // transparent joystick hit fields are different: they must span their real
+    // half of the physical screen, including ultrawide phones.
+    open fun useIndependentAxisScale(): Boolean = false
+
     fun updateView() {
         val v = view ?: return
 
@@ -163,8 +168,14 @@ open class OscElement(
         val realX = (x * scaleX).toInt()
         val realY = (y * scaleY).toInt()
 
-        val screenWidth = (getVirtualWidth() * uniformScale).toInt()
-        val screenHeight = (getVirtualHeight() * uniformScale).toInt()
+        val screenWidth = if (useIndependentAxisScale())
+            (getVirtualWidth() * scaleX).toInt()
+        else
+            (getVirtualWidth() * uniformScale).toInt()
+        val screenHeight = if (useIndependentAxisScale())
+            (getVirtualHeight() * scaleY).toInt()
+        else
+            (getVirtualHeight() * uniformScale).toInt()
         val params = RelativeLayout.LayoutParams(screenWidth, screenHeight)
 
         params.leftMargin = realX
@@ -459,7 +470,7 @@ class OscJoystickLeft(
     override fun makeView(ctx: Context) {
         val v = JoystickLeft(ctx)
         v.setStick(stick)
-        v.setShowVisuals(true)
+        v.setShowVisuals(false)
         v.tag = this
 
         view = v
@@ -467,6 +478,7 @@ class OscJoystickLeft(
 
     override fun getVirtualWidth(): Int = fieldWidth
     override fun getVirtualHeight(): Int = fieldHeight
+    override fun useIndependentAxisScale(): Boolean = true
 }
 
 class OscJoystickRight(
@@ -483,7 +495,7 @@ class OscJoystickRight(
     override fun makeView(ctx: Context) {
         val v = JoystickRight(ctx)
         v.setStick(stick)
-        v.setShowVisuals(true)
+        v.setShowVisuals(false)
         v.tag = this
 
         view = v
@@ -491,6 +503,7 @@ class OscJoystickRight(
 
     override fun getVirtualWidth(): Int = fieldWidth
     override fun getVirtualHeight(): Int = fieldHeight
+    override fun useIndependentAxisScale(): Boolean = true
 }
 
 open class OscHiddenButton(

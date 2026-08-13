@@ -194,6 +194,9 @@ class GameActivity : SDLActivity() {
         val pref_hide_controls = prefs.getBoolean(Constants.HIDE_CONTROLS, false)
         if (!pref_hide_controls) {
             val layout = layout
+            // Keep left movement, right look and action-button fingers in separate
+            // child streams. This prevents pointer-index stealing during multi-touch.
+            layout.setMotionEventSplittingEnabled(true)
             osc = Osc()
             osc?.placeElements(layout)
         }

@@ -125,9 +125,9 @@ open class Joystick : View {
     }
 
     private fun idleCenterX(): Float {
-        // Both values are local to their half-screen view. The right stick is kept
-        // left of the attack/right-column buttons, leaving a clean look corridor.
-        return width * if (stickId == 0) 0.34f else 0.38f
+        // Both values are local to their true half-screen view. Keep them mirrored
+        // around the screen centre: left at 34%, right at 62% of its half.
+        return width * if (stickId == 0) 0.34f else 0.62f
     }
 
     private fun idleCenterY(): Float = height * 0.73f
