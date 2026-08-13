@@ -454,12 +454,12 @@ class OscJoystickLeft(
     private val fieldWidth: Int,
     private val fieldHeight: Int,
     private val stick: Int
-) : OscElement(uniqueId, "", visibility, defaultX, defaultY, defaultSize, 0.0f, false) {
+) : OscElement(uniqueId, "", visibility, defaultX, defaultY, defaultSize, 1.0f, false) {
 
     override fun makeView(ctx: Context) {
         val v = JoystickLeft(ctx)
         v.setStick(stick)
-        v.setShowVisuals(false)
+        v.setShowVisuals(true)
         v.tag = this
 
         view = v
@@ -478,12 +478,12 @@ class OscJoystickRight(
     private val fieldWidth: Int,
     private val fieldHeight: Int,
     private val stick: Int
-) : OscElement(uniqueId, "", visibility, defaultX, defaultY, defaultSize, 0.0f, false) {
+) : OscElement(uniqueId, "", visibility, defaultX, defaultY, defaultSize, 1.0f, false) {
 
     override fun makeView(ctx: Context) {
         val v = JoystickRight(ctx)
         v.setStick(stick)
-        v.setShowVisuals(false)
+        v.setShowVisuals(true)
         v.tag = this
 
         view = v
@@ -694,6 +694,14 @@ class Osc {
             element.place(target)
             element.loadPrefs(target.context)
         }
+
+        // Keep the two large stick touch fields above the action-button layer. Their
+        // ACTION_DOWN hit test passes the centre of real OSC buttons through, while
+        // free-space drags stay captured by the stick even when the finger later
+        // crosses a button. This fixes the right-look stick getting "lost" nearby.
+        joystickLeft.view?.bringToFront()
+        joystickRight.view?.bringToFront()
+
         osk.placeElements(target)
 
         // Кнопка-тогглер клавиатуры/F12 — поверх всего, в правом верхнем углу.

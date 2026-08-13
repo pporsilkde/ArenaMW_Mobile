@@ -104,11 +104,11 @@ class GameActivity : SDLActivity() {
             // ── OSG Threading из preset ───────────────────────────────────────
             val presetId = prefs!!.getString("pref_graphics_preset", "auto")
             val preset = GraphicsPresets.resolve(presetId)
-            Os.setenv("OSG_MAX_PAGEDLOD", preset?.maxPagedLOD?.toString() ?: "8", true)
+            Os.setenv("OSG_MAX_PAGEDLOD", preset?.maxPagedLOD?.toString() ?: "6", true)
             Os.setenv("OSG_THREADING", preset?.osgThreading ?: "DrawThreadPerContext", true)
-            Os.setenv("OSG_NUM_DATABASE_THREADS", preset?.dbThreads?.toString() ?: "4", true)
+            Os.setenv("OSG_NUM_DATABASE_THREADS", preset?.dbThreads?.toString() ?: "3", true)
             Os.setenv("OSG_NUM_COMPILE_THREADS", preset?.compileThreads?.toString() ?: "2", true)
-            Os.setenv("OSG_DATABASE_PAGER_THREADS", preset?.pagerThreads?.toString() ?: "4", true)
+            Os.setenv("OSG_DATABASE_PAGER_THREADS", preset?.pagerThreads?.toString() ?: "3", true)
             Os.setenv("OSG_SHADER_CACHE_ENABLED", if (preset?.shaderCache != false) "1" else "0", true)
 
             // ── NG-GL4ES специфичные переменные ──────────────────────────────
@@ -194,10 +194,6 @@ class GameActivity : SDLActivity() {
         val pref_hide_controls = prefs.getBoolean(Constants.HIDE_CONTROLS, false)
         if (!pref_hide_controls) {
             val layout = layout
-            // Explicitly split multi-touch streams between child controls.
-            // This keeps the movement stick, look stick and action buttons from
-            // stealing/reindexing one another's fingers during simultaneous input.
-            layout.setMotionEventSplittingEnabled(true)
             osc = Osc()
             osc?.placeElements(layout)
         }

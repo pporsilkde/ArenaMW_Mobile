@@ -602,7 +602,7 @@ class MainActivity : AppCompatActivity() {
                 // [Water]
                 file.Writer.write(cfg, "Water", "shader", boolPref("pref_shader_water"))
                 file.Writer.write(cfg, "Water", "refraction", boolPref("pref_refraction"))
-                file.Writer.write(cfg, "Water", "rtt size", prefs.getString("pref_rtt_size", "512")!!)
+                file.Writer.write(cfg, "Water", "rtt size", prefs.getString("pref_rtt_size", "256")!!)
                 file.Writer.write(cfg, "Water", "reflection detail", prefs.getString("pref_reflection_detail", "3")!!)
 
                 // [Input]
@@ -714,21 +714,52 @@ class MainActivity : AppCompatActivity() {
                 file.Writer.write(androidSettings, "Water", "refraction", "true")
                 file.Writer.write(androidSettings, "Water", "shader water ripples", "true")
                 file.Writer.write(androidSettings, "Water", "reflection detail", "3")
-                file.Writer.write(androidSettings, "Water", "rtt size", "512")
-                // V6 Android shadows: raw depth + manual PCF in GLSL. Start with a
-                // single 1024 map to keep the first mobile test predictable and affordable.
-                file.Writer.write(androidSettings, "Shadows", "enable shadows", "true")
-                file.Writer.write(androidSettings, "Shadows", "number of shadow maps", "1")
-                file.Writer.write(androidSettings, "Shadows", "maximum shadow map distance", "4096")
-                file.Writer.write(androidSettings, "Shadows", "shadow fade start", "0.82")
-                file.Writer.write(androidSettings, "Shadows", "allow shadow map overlap", "false")
-                file.Writer.write(androidSettings, "Shadows", "shadow map resolution", "1024")
-                file.Writer.write(androidSettings, "Shadows", "actor shadows", "true")
-                file.Writer.write(androidSettings, "Shadows", "player shadows", "true")
-                file.Writer.write(androidSettings, "Shadows", "object shadows", "true")
-                file.Writer.write(androidSettings, "Shadows", "terrain shadows", "false")
-                file.Writer.write(androidSettings, "Shadows", "enable indoor shadows", "false")
-                file.Writer.write(androidSettings, "Shadows", "enhanced filtering", "false")
+
+                // V8 mobile defaults are a one-time migration, not a per-launch override.
+                // This keeps the tested GLES shader path intact while allowing the user to
+                // change water/shadow/performance settings in-game without the launcher
+                // silently reverting them on the next start.
+                val mobileDefaultsV8 = "arenamw_android_mobile_defaults_v8"
+                if (!prefs.getBoolean(mobileDefaultsV8, false)) {
+                    // Complex water stays enabled, but render targets are cheaper and the
+                    // wave-height slider starts at the calmer 0.34 value tested on-device.
+                    file.Writer.write(androidSettings, "Water", "rtt size", "256")
+                    file.Writer.write(androidSettings, "Water", "wave strength", "0.34")
+
+                    // GLES shadows remain fully available, but start disabled. When enabled
+                    // by the user they use one 512 map; actor/player/object casters are kept
+                    // ready so flipping the master switch immediately produces shadows.
+                    file.Writer.write(androidSettings, "Shadows", "enable shadows", "false")
+                    file.Writer.write(androidSettings, "Shadows", "number of shadow maps", "1")
+                    file.Writer.write(androidSettings, "Shadows", "maximum shadow map distance", "4096")
+                    file.Writer.write(androidSettings, "Shadows", "shadow fade start", "0.82")
+                    file.Writer.write(androidSettings, "Shadows", "allow shadow map overlap", "false")
+                    file.Writer.write(androidSettings, "Shadows", "shadow map resolution", "512")
+                    file.Writer.write(androidSettings, "Shadows", "actor shadows", "true")
+                    file.Writer.write(androidSettings, "Shadows", "player shadows", "true")
+                    file.Writer.write(androidSettings, "Shadows", "object shadows", "true")
+                    file.Writer.write(androidSettings, "Shadows", "terrain shadows", "false")
+                    file.Writer.write(androidSettings, "Shadows", "enable indoor shadows", "false")
+                    file.Writer.write(androidSettings, "Shadows", "enhanced filtering", "false")
+
+                    // Reduce streaming hitches without spawning an excessive number of
+                    // competing worker threads on a phone. These are only seeded once.
+                    file.Writer.write(androidSettings, "Cells", "preload enabled", "true")
+                    file.Writer.write(androidSettings, "Cells", "preload num threads", "2")
+                    file.Writer.write(androidSettings, "Cells", "preload distance", "1400")
+                    file.Writer.write(androidSettings, "Cells", "preload exterior grid", "true")
+                    file.Writer.write(androidSettings, "Cells", "preload instances", "true")
+                    file.Writer.write(androidSettings, "Cells", "preload cell expiry delay", "10")
+                    file.Writer.write(androidSettings, "Cells", "cache expiry delay", "10")
+                    file.Writer.write(androidSettings, "Physics", "async num threads", "1")
+
+                    // Keep the launcher's matching Water RTT preference in sync, otherwise
+                    // the optional global-settings writer could restore the old 512 default.
+                    prefs.edit()
+                        .putString("pref_rtt_size", "256")
+                        .putBoolean(mobileDefaultsV8, true)
+                        .apply()
+                }
 
                 configureDefaultsBin(mapOf(
 

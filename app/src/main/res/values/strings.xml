@@ -336,7 +336,7 @@
         <item>0</item>
     </string-array>
     <string name="pref_rtt_size">Reflection and refraction texture quality</string>
-    <string name="pref_rtt_size_default">512</string>
+    <string name="pref_rtt_size_default">256</string>
     <string-array name="pref_rtt_size_entries">
 	<item>Quality</item>
 	<item>Balanced</item>
