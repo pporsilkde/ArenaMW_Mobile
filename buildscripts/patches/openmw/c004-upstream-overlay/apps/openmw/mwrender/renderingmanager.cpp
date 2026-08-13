@@ -754,6 +754,21 @@ namespace MWRender
         sceneRoot->setNodeMask(Mask_Scene);
         sceneRoot->setName("Scene Root");
 
+#ifdef __ANDROID__
+        // ArenaMW Mobile hard safety limits. Old settings.cfg files may still
+        // contain desktop-sized shadow maps/distances; clamp before ShadowManager
+        // allocates any render targets.
+        const int configuredShadowMapResolution = Settings::Manager::getInt("shadow map resolution", "Shadows");
+        const int safeShadowMapResolution = std::clamp(configuredShadowMapResolution, 512, 1024);
+        if (configuredShadowMapResolution != safeShadowMapResolution)
+            Settings::Manager::setInt("shadow map resolution", "Shadows", safeShadowMapResolution);
+
+        const float configuredShadowDistance = Settings::Manager::getFloat("maximum shadow map distance", "Shadows");
+        const float safeShadowDistance = std::clamp(configuredShadowDistance, 0.f, 8192.f);
+        if (configuredShadowDistance != safeShadowDistance)
+            Settings::Manager::setFloat("maximum shadow map distance", "Shadows", safeShadowDistance);
+#endif
+
         int shadowCastingTraversalMask = Mask_Scene;
         if (Settings::Manager::getBool("actor shadows", "Shadows"))
             shadowCastingTraversalMask |= Mask_Actor;
@@ -1760,8 +1775,8 @@ namespace MWRender
         if (mShadowManager)
         {
             const float shadowDistance = mLandOptimizationEnabled
-                ? mConfiguredViewDistance * sLandOptimizationShadowDistanceRatio
-                : std::max(0.f, Settings::Manager::getFloat("maximum shadow map distance", "Shadows"));
+                ? std::min(8192.f, mConfiguredViewDistance * sLandOptimizationShadowDistanceRatio)
+                : std::clamp(Settings::Manager::getFloat("maximum shadow map distance", "Shadows"), 0.f, 8192.f);
             mShadowManager->setMaximumShadowMapDistance(shadowDistance * adaptiveDistanceScale);
         }
     }
@@ -2204,13 +2219,25 @@ namespace MWRender
                 // Sampling-only controls are uniforms updated by StateUpdater.
                 // Do not rebuild cascades/shadow cameras or shader defines while
                 // the user drags these sliders.
-                if (setting.second != "enhanced filtering"
-                    && setting.second != "filter softness"
-                    && setting.second != "adaptive softness")
+                const bool samplingOnly = setting.second == "enhanced filtering"
+                    || setting.second == "filter softness"
+                    || setting.second == "adaptive softness";
+
+#ifdef __ANDROID__
+                // On GLES/NG-GL4ES, rebuilding shadow RTT cameras and shader defines
+                // from the live settings menu can invalidate active render stages and
+                // crash. Structural shadow changes are therefore persisted normally
+                // but applied on the next game start. Distance is safe to update live
+                // because it only changes ShadowManager's projection limit.
+                if (!samplingOnly && setting.second == "maximum shadow map distance")
+                    updateProjectionMatrix();
+#else
+                if (!samplingOnly)
                 {
                     refreshShadowSettings = true;
                     refreshShaderDefines = true;
                 }
+#endif
             }
         }
 

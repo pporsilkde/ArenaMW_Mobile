@@ -700,6 +700,28 @@
 	<item>16</item>
     </string-array>
 
+
+    <!-- ================= Graphics profiles V16 ================= -->
+    <string name="graphics_settings_button">Graphics settings</string>
+    <string name="graphics_settings_summary">Low / Medium / High / Ultra profiles</string>
+    <string name="graphics_dialog_title">Graphics settings</string>
+    <string name="graphics_overall_profile">Overall quality (auto-selected on first launch)</string>
+    <string name="graphics_osg_profile">OSG / renderer</string>
+    <string name="graphics_streaming_profile">View distance / preloading</string>
+    <string name="graphics_terrain_profile">Landscape</string>
+    <string name="graphics_shaders_profile">Shader quality</string>
+    <string name="graphics_lighting_profile">Lighting</string>
+    <string name="graphics_shadows_profile">Shadows</string>
+    <string name="graphics_grass_profile">Grass</string>
+    <string name="graphics_level_low">Low</string>
+    <string name="graphics_level_medium">Medium</string>
+    <string name="graphics_level_high">High</string>
+    <string name="graphics_level_ultra">Ultra</string>
+    <string name="graphics_level_custom">Custom</string>
+    <string name="graphics_apply">Apply</string>
+    <string name="graphics_shadow_safety_note">Android safety: shadow maps are capped at 1024 and shadow distance at 8192. Structural shadow changes made in-game are saved safely and take effect after the next game start.</string>
+    <string name="graphics_profile_summary_format">Current: %1$s</string>
+
     <!-- ================= Graphics preset ================= -->
     <string name="pref_graphics_preset_category">Graphics</string>
     <string name="pref_graphics_preset">Graphics preset</string>

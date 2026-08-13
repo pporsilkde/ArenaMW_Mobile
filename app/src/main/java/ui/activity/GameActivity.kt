@@ -101,15 +101,14 @@ class GameActivity : SDLActivity() {
             Os.setenv("OSG_COP_VALUE", "0x00000100", true)
             Os.setenv("OSG_NOTIFY_LEVEL", "WARN", true)
 
-            // ── OSG Threading из preset ───────────────────────────────────────
-            val presetId = prefs!!.getString("pref_graphics_preset", "auto")
-            val preset = GraphicsPresets.resolve(presetId)
-            Os.setenv("OSG_MAX_PAGEDLOD", preset?.maxPagedLOD?.toString() ?: "6", true)
-            Os.setenv("OSG_THREADING", preset?.osgThreading ?: "DrawThreadPerContext", true)
-            Os.setenv("OSG_NUM_DATABASE_THREADS", preset?.dbThreads?.toString() ?: "3", true)
-            Os.setenv("OSG_NUM_COMPILE_THREADS", preset?.compileThreads?.toString() ?: "2", true)
-            Os.setenv("OSG_DATABASE_PAGER_THREADS", preset?.pagerThreads?.toString() ?: "3", true)
-            Os.setenv("OSG_SHADER_CACHE_ENABLED", if (preset?.shaderCache != false) "1" else "0", true)
+            // ── OSG Threading из отдельного профиля OSG ─────────────────────
+            val osgPreset = GraphicsPresets.getOsgPreset(prefs!!)
+            Os.setenv("OSG_MAX_PAGEDLOD", osgPreset.maxPagedLOD.toString(), true)
+            Os.setenv("OSG_THREADING", osgPreset.osgThreading, true)
+            Os.setenv("OSG_NUM_DATABASE_THREADS", osgPreset.dbThreads.toString(), true)
+            Os.setenv("OSG_NUM_COMPILE_THREADS", osgPreset.compileThreads.toString(), true)
+            Os.setenv("OSG_DATABASE_PAGER_THREADS", osgPreset.pagerThreads.toString(), true)
+            Os.setenv("OSG_SHADER_CACHE_ENABLED", "1", true)
 
             // ── NG-GL4ES специфичные переменные ──────────────────────────────
             // Keep the known-working simple converter for the general ArenaMW 0.47 renderer.

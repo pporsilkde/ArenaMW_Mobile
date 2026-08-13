@@ -136,9 +136,10 @@ namespace
             box->setIndexSelected(MyGUI::ITEM_NONE);
     }
 
-    constexpr std::array<int, 5> shadowMapResolutions = { 512, 1024, 2048, 4096, 8192 };
-    constexpr std::array<const char*, 5> shadowMapQualityNames =
-        { "value.balanced", "value.high", "value.very_high", "value.detailed", "value.maximum" };
+    // Android-safe shadow map choices. 1024 is a hard ceiling for this port.
+    constexpr std::array<int, 2> shadowMapResolutions = { 512, 1024 };
+    constexpr std::array<const char*, 2> shadowMapQualityNames =
+        { "value.balanced", "value.high" };
     constexpr std::array<const char*, 6> shadowPresetNames =
         { "value.disabled", "value.actor", "value.npc", "value.object", "value.terrain", "value.indoor" };
 

@@ -1027,7 +1027,7 @@
             <UserString key="SettingName" value="maximum shadow map distance"/>
             <UserString key="SettingValueType" value="Integer"/>
             <UserString key="SettingMin" value="1024"/>
-            <UserString key="SettingMax" value="16384"/>
+            <UserString key="SettingMax" value="8192"/>
             <UserString key="SettingLabelWidget" value="ShadowDistanceLabel"/>
             <UserString key="SettingLabelCaption" value="#{arenamp=settings.shadow_distance}"/>
           </Widget>

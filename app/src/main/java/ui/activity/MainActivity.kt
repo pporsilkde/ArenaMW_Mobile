@@ -77,6 +77,9 @@ class MainActivity : AppCompatActivity() {
         PermissionHelper.getWriteExternalStoragePermission(this@MainActivity)
         setContentView(R.layout.main)
         prefs = PreferenceManager.getDefaultSharedPreferences(this)
+        // Select a concrete Low/Medium/High/Ultra profile once on a fresh install.
+        // Existing users are migrated from the old single launcher preset.
+        GraphicsPresets.ensureInitialized(this, prefs)
 
         fragmentManager.beginTransaction()
             .replace(R.id.content_frame, FragmentSettings()).commit()
@@ -644,48 +647,17 @@ class MainActivity : AppCompatActivity() {
                 }
 
 
-                // --- Graphics preset (overrides some perf-related keys) ---
-                val presetId = prefs.getString("pref_graphics_preset", "auto")
-                val preset = GraphicsPresets.resolve(presetId)
-                if (preset != null) {
-                    // OSG env vars (read by the engine at startup)
-                    try { Os.setenv("OSG_THREADING", preset.osgThreading, true) } catch (_: Exception) {}
-                    try { Os.setenv("OSG_DATABASE_PAGER_THREADS", preset.pagerThreads.toString(), true) } catch (_: Exception) {}
-                    try { Os.setenv("OSG_NUM_DATABASE_THREADS", preset.dbThreads.toString(), true) } catch (_: Exception) {}
-                    try { Os.setenv("OSG_NUM_COMPILE_THREADS", preset.compileThreads.toString(), true) } catch (_: Exception) {}
-                    try { Os.setenv("OSG_MAX_PAGEDLOD", preset.maxPagedLOD.toString(), true) } catch (_: Exception) {}
-                    try { Os.setenv("OSG_SHADER_CACHE_ENABLED", if (preset.shaderCache) "1" else "0", true) } catch (_: Exception) {}
-
-                    // OpenMW settings.cfg overrides
-                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Camera",  "viewing distance", preset.viewingDistance.toString())
-                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Terrain", "lod factor",        preset.lodFactor.toString())
-                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Video",   "antialiasing",      preset.antialiasing.toString())
-                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Physics", "async num threads", preset.asyncNumThreads.toString())
-                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Cells",   "target framerate",  preset.targetFramerate.toString())
-                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Shaders", "force shaders",     if (preset.shadersOn) "true" else "false")
-                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Shaders", "force per pixel lighting", if (preset.perPixelLighting) "true" else "false")
-                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Terrain", "object paging",     if (preset.objectPaging) "true" else "false")
-                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Terrain", "distant terrain",   if (preset.distantTerrain) "true" else "false")
-
-                    // Do not use GL4ES texture shrinking. Keep composite resolution at 1024;
-                    // only the composite map level changes between -3 and -1.
-                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Terrain", "composite map level", preset.compositeMapLevel.toString())
-                    file.Writer.write(Constants.USER_CONFIG + "/settings.cfg", "Terrain", "composite map resolution", preset.compositeMapResolution.toString())
-                }
+                // Graphics profile settings are applied below only when the launcher
+                // profile was actually changed. This lets the in-game settings remain
+                // authoritative between launches.
 
                 // Android complex-water V3. Keep the stable object/terrain compatibility
                 // renderer from V2, but deliberately re-enable ArenaMW's complex PBR water
                 // through an Android-specific GLES compatibility fragment shader.
                 val androidSettings = Constants.USER_CONFIG + "/settings.cfg"
                 file.Writer.write(androidSettings, "Shaders", "force shaders", "true")
-                file.Writer.write(androidSettings, "Shaders", "force per pixel lighting", "false")
                 file.Writer.write(androidSettings, "Shaders", "lighting method", "shaders compatibility")
                 file.Writer.write(androidSettings, "Shaders", "enhanced pbr lighting", "false")
-                file.Writer.write(androidSettings, "Shaders", "material quality", "none")
-                file.Writer.write(androidSettings, "Shaders", "auto use object normal maps", "false")
-                file.Writer.write(androidSettings, "Shaders", "auto use object specular maps", "false")
-                file.Writer.write(androidSettings, "Shaders", "auto use terrain normal maps", "false")
-                file.Writer.write(androidSettings, "Shaders", "auto use terrain specular maps", "false")
                 file.Writer.write(androidSettings, "Shaders", "antialias alpha test", "false")
                 file.Writer.write(androidSettings, "Water", "shader", "true")
                 file.Writer.write(androidSettings, "Water", "refraction", "true")
@@ -729,6 +701,11 @@ class MainActivity : AppCompatActivity() {
                         .putBoolean(mobileDefaultsV8, true)
                         .apply()
                 }
+
+                // Apply launcher graphics groups only after a user/first-run change.
+                // On later starts this is a no-op, so OpenMW's own graphics menu can
+                // change shadows/terrain/etc. without the launcher restoring them.
+                GraphicsPresets.applyPending(androidSettings, prefs)
 
                 configureDefaultsBin(mapOf(
 
