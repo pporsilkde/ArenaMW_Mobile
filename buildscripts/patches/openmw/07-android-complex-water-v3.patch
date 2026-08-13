@@ -1,21 +1,21 @@
 diff --git a/apps/openmw/mwrender/water.cpp b/apps/openmw/mwrender/water.cpp
-index 6bf7d93..bf332db 100644
+index b3bf59591df2e3b286dca9c5c3a5e82731ae4e89..e63e780363c2413062e38136236024f60bd5992b 100644
 --- a/apps/openmw/mwrender/water.cpp
 +++ b/apps/openmw/mwrender/water.cpp
-@@ -731,7 +731,11 @@ void Water::createShaderWaterStateSet(osg::Node* node, Reflection* reflection, R
-     osg::ref_ptr<osg::Shader> vertexShader(
-         shaderMgr.getShader("water_pbr_vertex.glsl", defineMap, osg::Shader::VERTEX));
-     osg::ref_ptr<osg::Shader> fragmentShader(
+@@ -741,7 +741,11 @@ void Water::createShaderWaterStateSet(osg::Node* node, Reflection* reflection, R
+     if (pbr)
+     {
+         vertexShader = shaderMgr.getShader("water_pbr_vertex.glsl", defineMap, osg::Shader::VERTEX);
 +#if defined(__ANDROID__)
-+        shaderMgr.getShader("water_pbr_android_fragment.glsl", defineMap, osg::Shader::FRAGMENT));
++        fragmentShader = shaderMgr.getShader("water_pbr_android_fragment.glsl", defineMap, osg::Shader::FRAGMENT);
 +#else
-         shaderMgr.getShader("water_pbr_fragment.glsl", defineMap, osg::Shader::FRAGMENT));
+         fragmentShader = shaderMgr.getShader("water_pbr_fragment.glsl", defineMap, osg::Shader::FRAGMENT);
 +#endif
  
-     // Keep the previous ArenaMW water shader as a parse-time fallback.  This does
-     // not mask GPU compile errors, but protects the build from a missing resource
+         // Keep the previous ArenaMW water shader as a parse-time fallback. This
+         // protects old GPUs/configurations from a missing PBR resource.
 diff --git a/files/shaders/CMakeLists.txt b/files/shaders/CMakeLists.txt
-index c2d6777..ed62553 100644
+index c2d677704bce1b92b4cd9842b6b5a85afc5f5bdb..ed625532e9cff1a8b56c9e80e0a92406b9648a24 100644
 --- a/files/shaders/CMakeLists.txt
 +++ b/files/shaders/CMakeLists.txt
 @@ -25,6 +25,8 @@ set(SHADER_FILES
@@ -29,7 +29,7 @@ index c2d6777..ed62553 100644
      water_pbr_data.glsl
 diff --git a/files/shaders/water_pbr_android_data.glsl b/files/shaders/water_pbr_android_data.glsl
 new file mode 100644
-index 0000000..e07137a
+index 0000000000000000000000000000000000000000..e07137ad0510b8d72f8d20de2747f139d9fa9bdd
 --- /dev/null
 +++ b/files/shaders/water_pbr_android_data.glsl
 @@ -0,0 +1,452 @@
@@ -487,7 +487,7 @@ index 0000000..e07137a
 +// 2.0c
 diff --git a/files/shaders/water_pbr_android_fragment.glsl b/files/shaders/water_pbr_android_fragment.glsl
 new file mode 100644
-index 0000000..22767e2
+index 0000000000000000000000000000000000000000..22767e200c306da1c0e25b0fe6a9ce9f3bd4d838
 --- /dev/null
 +++ b/files/shaders/water_pbr_android_fragment.glsl
 @@ -0,0 +1,1191 @@
