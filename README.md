@@ -1,3 +1,7 @@
+# ArenaMW Android — Complex Water V3
+
+Текущая тестовая ветка: сложная PBR-вода адаптирована для Android GLES/NG-GL4ES. См. `COMPLEX_WATER_V3_RU.md`.
+
 # ArenaMW Android — original-builder port
 
 This is a minimal single-player adaptation of the original working `Android_ArenaMP_NG` builder. The toolchain and dependency versions are intentionally kept close to the original instead of being modernized all at once.
@@ -38,3 +42,6 @@ ARENAMW_GIT_TAG=main buildscripts/build.sh --arch arm64 --ccache --release
 ```
 
 `ARENAMW_REPOSITORY` can also be overridden.
+
+## Android PostFX V9
+HDR, Bloom, SSR и SMAA доступны как opt-in эффекты. Они выключены по умолчанию, но лаунчер больше не сбрасывает их на каждом запуске. См. `POSTFX_V9_RU.md`.

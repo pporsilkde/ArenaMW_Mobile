@@ -699,10 +699,6 @@ class MainActivity : AppCompatActivity() {
                 file.Writer.write(androidSettings, "Shaders", "force shaders", "true")
                 file.Writer.write(androidSettings, "Shaders", "force per pixel lighting", "false")
                 file.Writer.write(androidSettings, "Shaders", "lighting method", "shaders compatibility")
-                file.Writer.write(androidSettings, "Shaders", "hdr lighting", "false")
-                file.Writer.write(androidSettings, "Shaders", "bloom enabled", "false")
-                file.Writer.write(androidSettings, "Shaders", "native ssr enabled", "false")
-                file.Writer.write(androidSettings, "Shaders", "smaa enabled", "false")
                 file.Writer.write(androidSettings, "Shaders", "enhanced pbr lighting", "false")
                 file.Writer.write(androidSettings, "Shaders", "material quality", "none")
                 file.Writer.write(androidSettings, "Shaders", "auto use object normal maps", "false")
@@ -714,6 +710,18 @@ class MainActivity : AppCompatActivity() {
                 file.Writer.write(androidSettings, "Water", "refraction", "true")
                 file.Writer.write(androidSettings, "Water", "shader water ripples", "true")
                 file.Writer.write(androidSettings, "Water", "reflection detail", "3")
+
+                // V9: post-processing is supported on Android but remains opt-in.
+                // Seed the master switches OFF exactly once; after that the in-game
+                // ArenaMW settings are authoritative and the launcher never resets them.
+                val postFxDefaultsV9 = "arenamw_android_postfx_defaults_v9"
+                if (!prefs.getBoolean(postFxDefaultsV9, false)) {
+                    file.Writer.write(androidSettings, "Shaders", "hdr lighting", "false")
+                    file.Writer.write(androidSettings, "Shaders", "bloom enabled", "false")
+                    file.Writer.write(androidSettings, "Shaders", "native ssr enabled", "false")
+                    file.Writer.write(androidSettings, "Shaders", "smaa enabled", "false")
+                    prefs.edit().putBoolean(postFxDefaultsV9, true).apply()
+                }
 
                 // V8 mobile defaults are a one-time migration, not a per-launch override.
                 // This keeps the tested GLES shader path intact while allowing the user to
