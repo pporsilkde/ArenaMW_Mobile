@@ -194,6 +194,10 @@ class GameActivity : SDLActivity() {
         val pref_hide_controls = prefs.getBoolean(Constants.HIDE_CONTROLS, false)
         if (!pref_hide_controls) {
             val layout = layout
+            // Explicitly split multi-touch streams between child controls.
+            // This keeps the movement stick, look stick and action buttons from
+            // stealing/reindexing one another's fingers during simultaneous input.
+            layout.setMotionEventSplittingEnabled(true)
             osc = Osc()
             osc?.placeElements(layout)
         }

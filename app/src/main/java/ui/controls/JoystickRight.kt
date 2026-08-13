@@ -19,17 +19,15 @@
 
 package ui.controls
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.util.AttributeSet
-import android.view.MotionEvent
 
 import org.libsdl.app.SDLActivity
 
 class JoystickRight : Joystick {
 
-    private var curX: Float = 0.toFloat()
-    private var curY: Float = 0.toFloat()
+    private var curX = 0f
+    private var curY = 0f
 
     constructor(context: Context) : super(context)
 
@@ -38,30 +36,27 @@ class JoystickRight : Joystick {
     constructor(context: Context, attrs: AttributeSet, defStyle: Int)
         : super(context, attrs, defStyle)
 
-    @SuppressLint("ClickableViewAccessibility")
-    override fun onTouchEvent(event: MotionEvent): Boolean {
-        when (event.actionMasked) {
-            MotionEvent.ACTION_DOWN -> {
-                curX = event.x
-                curY = event.y
-            }
-            MotionEvent.ACTION_MOVE -> {
-                val newX = event.x
-                val newY = event.y
+    override fun onTrackedPointerDown(x: Float, y: Float) {
+        super.onTrackedPointerDown(x, y)
+        // Rebase relative mouse movement whenever Android hands this view a new
+        // pointer.  This prevents a camera jump during pointer recovery/handoff.
+        curX = x
+        curY = y
+    }
 
-                // this isn't configurable here but configurable in openmw built-in settings
-                val mouseScalingFactor = 900f
+    override fun onTrackedPointerMove(x: Float, y: Float) {
+        // this isn't configurable here but configurable in openmw built-in settings
+        val mouseScalingFactor = 900f
 
-                val movementX = (newX - curX) * mouseScalingFactor / width
-                val movementY = (newY - curY) * mouseScalingFactor / height
+        if (width > 0 && height > 0) {
+            val movementX = (x - curX) * mouseScalingFactor / width
+            val movementY = (y - curY) * mouseScalingFactor / height
 
-                SDLActivity.sendRelativeMouseMotion(Math.round(movementX), Math.round(movementY))
-
-                curX = newX
-                curY = newY
-            }
+            SDLActivity.sendRelativeMouseMotion(Math.round(movementX), Math.round(movementY))
         }
 
-        return super.onTouchEvent(event)
+        curX = x
+        curY = y
+        super.onTrackedPointerMove(x, y)
     }
 }
