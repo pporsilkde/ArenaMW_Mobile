@@ -715,7 +715,20 @@ class MainActivity : AppCompatActivity() {
                 file.Writer.write(androidSettings, "Water", "shader water ripples", "true")
                 file.Writer.write(androidSettings, "Water", "reflection detail", "3")
                 file.Writer.write(androidSettings, "Water", "rtt size", "512")
-                file.Writer.write(androidSettings, "Shadows", "enable shadows", "false")
+                // V6 Android shadows: raw depth + manual PCF in GLSL. Start with a
+                // single 1024 map to keep the first mobile test predictable and affordable.
+                file.Writer.write(androidSettings, "Shadows", "enable shadows", "true")
+                file.Writer.write(androidSettings, "Shadows", "number of shadow maps", "1")
+                file.Writer.write(androidSettings, "Shadows", "maximum shadow map distance", "4096")
+                file.Writer.write(androidSettings, "Shadows", "shadow fade start", "0.82")
+                file.Writer.write(androidSettings, "Shadows", "allow shadow map overlap", "false")
+                file.Writer.write(androidSettings, "Shadows", "shadow map resolution", "1024")
+                file.Writer.write(androidSettings, "Shadows", "actor shadows", "true")
+                file.Writer.write(androidSettings, "Shadows", "player shadows", "true")
+                file.Writer.write(androidSettings, "Shadows", "object shadows", "true")
+                file.Writer.write(androidSettings, "Shadows", "terrain shadows", "false")
+                file.Writer.write(androidSettings, "Shadows", "enable indoor shadows", "false")
+                file.Writer.write(androidSettings, "Shadows", "enhanced filtering", "false")
 
                 configureDefaultsBin(mapOf(
 
