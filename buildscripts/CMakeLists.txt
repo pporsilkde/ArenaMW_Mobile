@@ -336,6 +336,11 @@ ExternalProject_Add(NG-GL4ES
 	# Openmw3 builds glslang and SPIRV-Cross from its pinned submodules with the
 	# same Android NDK, so the old prebuilt-glslang std::filesystem ABI stub is
 	# intentionally not injected here.
+	# Its current glsl_for_es.cpp uses std::regex::multiline, which is unavailable
+	# in the libc++ shipped by this builder's NDK r21e. Apply a narrow, idempotent
+	# source compatibility patch before configuring the wrapper.
+	PATCH_COMMAND python3 ${CMAKE_SOURCE_DIR}/patches/ng-gl4es/fix-openmw3-ndk-r21-regex.py <SOURCE_DIR>
+
 	CONFIGURE_COMMAND ${wrapper_command} cmake <SOURCE_DIR>
 	${COMMON_CMAKE_ARGS}
 	-DINCLUDE_SPIRV_TOOLS=OFF
