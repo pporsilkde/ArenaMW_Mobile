@@ -45,6 +45,31 @@ jobs:
           if [ -f storagechooser/gradlew ]; then chmod +x storagechooser/gradlew; fi
           if [ -f CI/travis.sh ]; then chmod +x CI/travis.sh; fi
 
+      - name: Apply Android builder compatibility patches
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          patches=(buildscripts/patches/android-builder/*.patch)
+          if [ ${#patches[@]} -eq 0 ]; then
+            echo "No Android builder compatibility patches"
+            exit 0
+          fi
+          for patch_file in "${patches[@]}"; do
+            echo "==> Checking ${patch_file}"
+            if git apply --check "${patch_file}"; then
+              git apply "${patch_file}"
+              echo "==> Applied ${patch_file}"
+            elif git apply --reverse --check "${patch_file}"; then
+              echo "==> Already applied: ${patch_file}"
+            else
+              echo "Patch does not apply cleanly: ${patch_file}" >&2
+              exit 1
+            fi
+          done
+          grep -q 'fun applyOrderedSelection(ordered: List<String>, authoritative: Boolean)' \
+            app/src/main/java/mods/ModsCollection.kt
+
       - name: Install native build tools
         run: |
           sudo apt-get update
