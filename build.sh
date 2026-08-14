@@ -172,7 +172,7 @@ mkdir -p prefix/$ARCH/
 # a rebuild of Bullet/OSG/MyGUI/etc. Only the wrapper ExternalProject is reset.
 GL4ES_REPO="${GL4ES_GIT_REPOSITORY:-https://github.com/Sisah2/NG-GL4ES.git}"
 GL4ES_TAG="${GL4ES_GIT_TAG:-Openmw3}"
-GL4ES_CACHE_ID="$GL4ES_REPO@$GL4ES_TAG"
+GL4ES_CACHE_ID="$GL4ES_REPO@$GL4ES_TAG@out-of-source-v1"
 GL4ES_MARKER="build/$ARCH/.ng-gl4es-source"
 if [[ ! -f "$GL4ES_MARKER" || "$(cat "$GL4ES_MARKER" 2>/dev/null || true)" != "$GL4ES_CACHE_ID" ]]; then
     echo "==> NG-GL4ES source changed: $GL4ES_CACHE_ID"
@@ -357,8 +357,8 @@ if [[ "$GENERATE_DEBUG_SYMBOLS" == "true" ]]; then
 	cp "./build/$ARCH/sdl2-prefix/src/sdl2-build/obj/local/$ABI/libSDL2.so" "./symbols/$ABI/"
 	cp "./build/$ARCH/sdl2-prefix/src/sdl2-build/obj/local/$ABI/libhidapi.so" "./symbols/$ABI/"
 	cp "./build/$ARCH/arenamw-prefix/src/arenamw-build/libopenmw.so" "./symbols/$ABI/libopenmw.so"
-	# Unstripped NG-GL4ES artifacts (built in-source, CMake project — not ndk-build)
-	cp "./build/$ARCH/NG-GL4ES-prefix/src/NG-GL4ES/libng_gl4es.so" "./symbols/$ABI/"
+	# Unstripped NG-GL4ES artifact (out-of-source CMake build)
+	cp "./build/$ARCH/NG-GL4ES-prefix/src/NG-GL4ES-build/libng_gl4es.so" "./symbols/$ABI/"
 	cp "../app/src/main/jniLibs/$ABI/libc++_shared.so" "./symbols/$ABI/"
 	if [ $ASAN = true ]; then
 		cp ./toolchain/$ARCH/lib64/clang/*/lib/linux/libclang_rt.asan-$ASAN_ARCH-android.so "./symbols/$ABI/"

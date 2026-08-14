@@ -328,7 +328,10 @@ ExternalProject_Add(NG-GL4ES
 	UPDATE_DISCONNECTED TRUE
 	DOWNLOAD_DIR ${download_dir}
 
-	BUILD_IN_SOURCE 1
+	# Openmw3 vendors SPIRV-Cross. SPIRV-Cross explicitly rejects Makefile
+	# builds where source and binary directories are the same, so NG-GL4ES must
+	# be configured out-of-source. ExternalProject's default <BINARY_DIR> is
+	# NG-GL4ES-prefix/src/NG-GL4ES-build.
 
 	# Openmw3 builds glslang and SPIRV-Cross from its pinned submodules with the
 	# same Android NDK, so the old prebuilt-glslang std::filesystem ABI stub is
