@@ -117,6 +117,9 @@ class GameActivity : SDLActivity() {
             Os.setenv("LIBGL_SIMPLE_SHADERCONV", "1", true)
             // Instancing через SPIRV
             Os.setenv("LIBGL_INSTANCING", "1", true)
+            // Match the newer OpenMW-Android builder: keep FBO attachments on the
+            // normal texture-backed path instead of forcing GL4ES FBO textures.
+            Os.setenv("LIBGL_FBOFORCETEX", "0", true)
             // DXT mipmaps через NG-GL4ES
             Os.setenv("LIBGL_DXTMIPMAP", "1", true)
             // Текстуры

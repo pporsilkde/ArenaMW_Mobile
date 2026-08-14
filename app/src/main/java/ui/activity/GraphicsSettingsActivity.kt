@@ -28,7 +28,7 @@ class GraphicsSettingsActivity : AppCompatActivity() {
     private var applyingPreset = false
 
     private val presetValues = listOf("very_low", "performance", "balanced", "quality", "battery", "custom")
-    private val distanceValues = listOf("3072", "4096", "5120", "6144", "8192")
+    private val distanceValues = listOf("4096", "5120", "6144", "8192", "12288", "16384", "24576", "32768", "40960")
     private val terrainValues = listOf("very_low", "low", "balanced", "medium")
     private val preloadValues = listOf("low", "balanced", "high")
     private val waterValues = listOf("low", "balanced", "high")
@@ -66,7 +66,7 @@ class GraphicsSettingsActivity : AppCompatActivity() {
         val prefs = PreferenceManager.getDefaultSharedPreferences(this)
         select(preset, presetValues, prefs.getString("pref_graphics_preset", "balanced") ?: "balanced")
         if (value(preset, presetValues) == "custom") {
-            select(distance, distanceValues, prefs.getString("pref_gfx_view_distance", "5120") ?: "5120")
+            select(distance, distanceValues, prefs.getString("pref_gfx_view_distance", "12288") ?: "12288")
             select(terrain, terrainValues, prefs.getString("pref_gfx_terrain", "balanced") ?: "balanced")
             select(preload, preloadValues, prefs.getString("pref_gfx_preload", "balanced") ?: "balanced")
             select(water, waterValues, prefs.getString("pref_gfx_water", "balanced") ?: "balanced")
@@ -129,7 +129,7 @@ class GraphicsSettingsActivity : AppCompatActivity() {
         select(distance, distanceValues, p.viewingDistance.toString())
         val terrainId = when { p.lodFactor <= .40f -> "very_low"; p.lodFactor <= .50f -> "low"; p.lodFactor >= .80f -> "medium"; else -> "balanced" }
         select(terrain, terrainValues, terrainId)
-        select(preload, preloadValues, when { p.preloadDistance <= 1200 -> "low"; p.preloadDistance >= 2000 -> "high"; else -> "balanced" })
+        select(preload, preloadValues, when { p.preloadDistance <= 1400 -> "low"; p.preloadDistance >= 2800 -> "high"; else -> "balanced" })
         select(water, waterValues, when { p.waterMode == "simple" -> "low"; p.waterRtt >= 512 -> "high"; else -> "balanced" })
         select(shadows, shadowValues, p.shadowScope)
         select(shadowMap, shadowMapValues, p.shadowResolution.toString())

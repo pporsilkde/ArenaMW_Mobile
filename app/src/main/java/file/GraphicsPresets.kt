@@ -34,41 +34,42 @@ object GraphicsPresets {
         val grassDensity: Float,
         val grassDistance: Int,
         val shaderProfile: String,
+        val landOptimization: String,
         val asyncNumThreads: Int = 1
     )
 
     val PRESETS: Map<String, Preset> = mapOf(
-        // Based on the supplied legacy low-end defaults: 4096 view, LOD .40,
-        // 1000 preload / one worker, 256 water RTT, shadows off, 1024 cap.
+        // Mobile profiles keep paging/preload workers deliberately low. A quick camera turn
+        // should pull from warmed caches rather than start several competing loaders at once.
         "very_low" to Preset(
             "CullDrawThreadPerContext", 1, 1, 1, 4, true,
-            4096, .40f, -3, -3, 512, true, true,
-            1000, 1, 60, 45.03f, "simple", 256, false, 2,
-            "off", 1024, 8192, true, .80f, 7100, "compatibility"
+            4096, .40f, -2, -3, 1024, true, true,
+            1600, 1, 60, 45.03f, "simple", 256, false, 2,
+            "off", 1024, 8192, true, .80f, 7100, "compatibility", "performance"
         ),
         "performance" to Preset(
-            "CullDrawThreadPerContext", 1, 1, 1, 4, true,
-            4096, .50f, -2, -3, 1024, true, false,
-            1200, 1, 60, 45.0f, "simple", 256, false, 2,
-            "off", 512, 4096, true, .65f, 5000, "compatibility"
+            "CullDrawThreadPerContext", 1, 1, 1, 5, true,
+            8192, .50f, -2, -3, 1024, true, true,
+            1800, 1, 60, 45.0f, "simple", 256, false, 2,
+            "off", 512, 4096, true, .65f, 5000, "compatibility", "performance"
         ),
         "balanced" to Preset(
             "CullDrawThreadPerContext", 1, 1, 1, 6, true,
-            5120, .65f, -1, -2, 1024, true, true,
-            1600, 1, 60, 60.0f, "new", 256, true, 2,
-            "characters", 512, 5120, true, .80f, 6000, "compatibility"
+            12288, .65f, -1, -2, 1024, true, true,
+            2400, 1, 60, 60.0f, "new", 256, true, 2,
+            "characters", 512, 5120, true, .80f, 6000, "compatibility", "performance"
         ),
         "quality" to Preset(
-            "CullDrawThreadPerContext", 2, 1, 1, 8, true,
-            6144, .80f, -1, -2, 2048, true, true,
-            2000, 1, 60, 60.0f, "new", 512, true, 3,
-            "objects", 1024, 6144, true, 1.0f, 7100, "standard"
+            "CullDrawThreadPerContext", 1, 1, 1, 8, true,
+            24576, .80f, -1, -2, 2048, true, true,
+            3000, 1, 60, 60.0f, "new", 512, true, 3,
+            "objects", 1024, 6144, true, 1.0f, 7100, "standard", "balance"
         ),
         "battery" to Preset(
             "SingleThreaded", 1, 1, 1, 3, true,
-            3072, .40f, -3, -3, 512, false, false,
-            800, 1, 30, 30.0f, "simple", 256, false, 1,
-            "off", 512, 3072, false, .50f, 3500, "compatibility"
+            4096, .40f, -2, -3, 1024, true, true,
+            1200, 1, 30, 30.0f, "simple", 256, false, 1,
+            "off", 512, 3072, false, .50f, 3500, "compatibility", "balance"
         )
     )
 
@@ -83,14 +84,14 @@ object GraphicsPresets {
         val base = PRESETS.getValue("balanced")
         val terrain = prefs.getString("pref_gfx_terrain", "balanced") ?: "balanced"
         val terrainValues = when (terrain) {
-            "very_low" -> floatArrayOf(.40f, -3f, -3f, 512f)
+            "very_low" -> floatArrayOf(.40f, -2f, -3f, 1024f)
             "low" -> floatArrayOf(.50f, -2f, -3f, 1024f)
             "medium" -> floatArrayOf(.80f, -1f, -2f, 2048f)
             else -> floatArrayOf(.65f, -1f, -2f, 1024f)
         }
         val preload = prefs.getString("pref_gfx_preload", "balanced") ?: "balanced"
-        val preloadDistance = when (preload) { "low" -> 1000; "high" -> 2200; else -> 1600 }
-        val preloadThreads = if (preload == "high") 2 else 1
+        val preloadDistance = when (preload) { "low" -> 1400; "high" -> 3000; else -> 2200 }
+        val preloadThreads = 1
         val water = prefs.getString("pref_gfx_water", "balanced") ?: "balanced"
         // Low uses the legacy/simple ArenaMW shader. Balanced/High use PBR water.
         // Keep the old low/balanced/high preference IDs for upgrade compatibility.
@@ -103,7 +104,7 @@ object GraphicsPresets {
         val grassDensity = when (grass) { "low" -> .55f; "high" -> 1.0f; else -> .80f }
         val grassDistance = when (grass) { "low" -> 4000; "high" -> 7100; else -> 6000 }
         return base.copy(
-            viewingDistance = (prefs.getString("pref_gfx_view_distance", "5120") ?: "5120").toIntOrNull()?.coerceIn(3072, 8192) ?: 5120,
+            viewingDistance = (prefs.getString("pref_gfx_view_distance", "12288") ?: "12288").toIntOrNull()?.coerceIn(4096, 40960) ?: 12288,
             lodFactor = terrainValues[0], vertexLodMod = terrainValues[1].toInt(),
             compositeMapLevel = terrainValues[2].toInt(), compositeMapResolution = terrainValues[3].toInt(),
             preloadDistance = preloadDistance, preloadThreads = preloadThreads,
@@ -112,7 +113,8 @@ object GraphicsPresets {
             shadowResolution = ((prefs.getString("pref_gfx_shadow_map", "512") ?: "512").toIntOrNull() ?: 512).coerceIn(512, 1024),
             shadowDistance = ((prefs.getString("pref_gfx_shadow_distance", "5120") ?: "5120").toIntOrNull() ?: 5120).coerceIn(1024, 8192),
             grassEnabled = grassEnabled, grassDensity = grassDensity, grassDistance = grassDistance,
-            shaderProfile = prefs.getString("pref_gfx_shaders", "compatibility") ?: "compatibility"
+            shaderProfile = prefs.getString("pref_gfx_shaders", "compatibility") ?: "compatibility",
+            landOptimization = when (terrain) { "medium" -> "balance"; else -> "performance" }
         )
     }
 
@@ -122,17 +124,57 @@ object GraphicsPresets {
         fun w(section: String, key: String, value: Any) = Writer.write(cfg, section, key, value.toString())
         fun b(value: Boolean) = if (value) "true" else "false"
 
-        w("Camera", "viewing distance", p.viewingDistance)
+        val terrainTier = when {
+            p.lodFactor <= .40f -> 0
+            p.lodFactor <= .50f -> 1
+            p.lodFactor <= .65f -> 2
+            else -> 3
+        }
+        val maxCompositeGeometry = floatArrayOf(4f, 4f, 6f, 8f)[terrainTier]
+        val pagingMerge = floatArrayOf(100000f, 75000f, 50000f, 30000f)[terrainTier]
+        val pagingMinSize = floatArrayOf(1f, .85f, .65f, .50f)[terrainTier]
+        val cullingPixels = intArrayOf(12, 11, 10, 8)[terrainTier]
+        val occWidth = intArrayOf(384, 384, 512, 512)[terrainTier]
+        val occHeight = intArrayOf(192, 192, 256, 256)[terrainTier]
+        val occTerrainRadius = intArrayOf(4, 4, 6, 8)[terrainTier]
+        val occMinRadius = floatArrayOf(650f, 600f, 550f, 500f)[terrainTier]
+        val occMaxRadius = floatArrayOf(3200f, 3600f, 4000f, 4400f)[terrainTier]
+        val occShrink = floatArrayOf(.70f, .72f, .74f, .76f)[terrainTier]
+        val occMesh = intArrayOf(8, 8, 10, 10)[terrainTier]
+        val occMaxMesh = intArrayOf(24, 24, 28, 28)[terrainTier]
+        val occInside = floatArrayOf(.96f, .95f, .94f, .93f)[terrainTier]
+        val occMaxDistance = floatArrayOf(3072f, 3584f, 4096f, 5120f)[terrainTier]
+        val cellCacheMax = intArrayOf(24, 32, 48, 64)[terrainTier]
+
+        w("Camera", "viewing distance", p.viewingDistance.coerceIn(4096, 40960))
+        w("Camera", "optimization land", p.landOptimization)
+        w("Camera", "small feature culling", "true")
+        w("Camera", "small feature culling pixel size", cullingPixels)
+        w("Camera", "occlusion culling", "true")
+        w("Camera", "occlusion culling terrain", "true")
+        w("Camera", "occlusion culling statics", "true")
+        w("Camera", "occlusion buffer width", occWidth)
+        w("Camera", "occlusion buffer height", occHeight)
+        w("Camera", "occlusion terrain radius", occTerrainRadius)
+        w("Camera", "occlusion occluder min radius", occMinRadius)
+        w("Camera", "occlusion occluder max radius", occMaxRadius)
+        w("Camera", "occlusion occluder shrink factor", occShrink)
+        w("Camera", "occlusion occluder mesh resolution", occMesh)
+        w("Camera", "occlusion occluder max mesh resolution", occMaxMesh)
+        w("Camera", "occlusion occluder inside threshold", occInside)
+        w("Camera", "occlusion occluder max distance", minOf(p.viewingDistance.toFloat(), occMaxDistance))
         w("Terrain", "distant terrain", b(p.distantTerrain))
         w("Terrain", "lod factor", p.lodFactor)
         w("Terrain", "vertex lod mod", p.vertexLodMod)
         w("Terrain", "composite map level", p.compositeMapLevel)
         w("Terrain", "composite map resolution", p.compositeMapResolution)
-        w("Terrain", "max composite geometry size", if (p.lodFactor <= .5f) "4.0" else if (p.lodFactor <= .65f) "6.0" else "8.0")
+        w("Terrain", "max composite geometry size", maxCompositeGeometry)
         w("Terrain", "object paging", b(p.objectPaging))
         w("Terrain", "object paging active grid", "true")
-        w("Terrain", "object paging merge factor", if (p.lodFactor <= .4f) "80000" else if (p.lodFactor <= .65f) "50000" else "30000")
-        w("Terrain", "object paging min size", if (p.lodFactor <= .4f) "1" else if (p.lodFactor <= .65f) "0.65" else "0.50")
+        w("Terrain", "object paging merge factor", pagingMerge)
+        w("Terrain", "object paging min size", pagingMinSize)
+        w("Terrain", "object paging min size merge factor", ".039")
+        w("Terrain", "object paging min size cost multiplier", "1")
 
         w("Cells", "preload enabled", "true")
         w("Cells", "preload num threads", p.preloadThreads)
@@ -142,10 +184,10 @@ object GraphicsPresets {
         w("Cells", "preload distance", p.preloadDistance)
         w("Cells", "preload instances", "true")
         w("Cells", "preload cell cache min", "16")
-        w("Cells", "preload cell cache max", "64")
-        w("Cells", "preload cell expiry delay", "5")
+        w("Cells", "preload cell cache max", cellCacheMax)
+        w("Cells", "preload cell expiry delay", "10")
         w("Cells", "prediction time", "2")
-        w("Cells", "cache expiry delay", "5")
+        w("Cells", "cache expiry delay", "10")
         w("Cells", "target framerate", p.targetFramerate)
         w("Physics", "async num threads", p.asyncNumThreads)
         w("Video", "antialiasing", "0")
