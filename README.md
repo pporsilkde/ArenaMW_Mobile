@@ -72,3 +72,8 @@ HDR, Bloom, SSR и SMAA доступны как opt-in эффекты. Они в
 ## ArenaMW Android V12 stable profile
 
 V12 removes the unstable HDR/Bloom/SSR/SMAA Android patch chain, fixes the mobile settings UI in both layout and C++/HPP logic, caps terrain detail at Medium, adds launcher shadow controls, preserves mod enable/order state, and uses the OpenMW launcher icon. See `STABLE_ANDROID_UI_MODS_V12_RU.md`.
+
+
+## V16.1 checkout hotfix
+
+V16.2 follows the live `pporsilkde/AMW:main` branch instead of a pinned commit. ArenaMW uses a shallow branch clone again, while GitHub Actions resolves the current remote HEAD on every run and resets/reapplies the build-time patch series only when that HEAD or the patch fingerprint changes. Gameplay/render patches are unchanged from V16.

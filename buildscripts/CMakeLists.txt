@@ -62,7 +62,7 @@ project(arenamw-android)
 # ArenaMW source can be overridden from the command line, for example:
 #   cmake ... -DARENAMW_REPOSITORY=/absolute/path/to/ArenaMW -DARENAMW_GIT_TAG=main
 set(ARENAMW_REPOSITORY "https://github.com/pporsilkde/AMW.git" CACHE STRING "ArenaMW Git repository or local source path")
-set(ARENAMW_GIT_TAG "46b24244ab486de0f7cd51d64cbcf9ae042e8e92" CACHE STRING "ArenaMW branch, tag or commit")
+set(ARENAMW_GIT_TAG "main" CACHE STRING "ArenaMW branch, tag or commit")
 
 include(ExternalProject)
 

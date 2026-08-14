@@ -1,6 +1,6 @@
 # ArenaMW Mobile — AMW3 Patch Pipeline V16
 
-База движка зафиксирована на ArenaMW/AMW commit `46b24244ab486de0f7cd51d64cbcf9ae042e8e92` (AMW(3)).
+Исторически V16 был подготовлен на AMW(3); в V16.2 сборка следует live ветке `pporsilkde/AMW:main`.
 Исходники движка и Android launcher не хранятся заранее пропатченными: GitHub Actions применяет patch-файлы во время сборки.
 
 ## Engine patch

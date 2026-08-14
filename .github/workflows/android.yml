@@ -27,8 +27,8 @@ jobs:
       LTO_JOBS: 1
       GENERATE_DEBUG_SYMBOLS: "false"
       ARENAMW_REPOSITORY: https://github.com/pporsilkde/AMW.git
-      ARENAMW_GIT_TAG: 46b24244ab486de0f7cd51d64cbcf9ae042e8e92
-      ARENAMW_INCREMENTAL_CACHE_EPOCH: arenamw-android-arm64-amw3-v16
+      ARENAMW_GIT_TAG: main
+      ARENAMW_INCREMENTAL_CACHE_EPOCH: arenamw-android-arm64-amw3-v16-2-main
       GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx3g
 
     steps:
@@ -236,7 +236,14 @@ jobs:
           git -C "$SRC" reset --hard HEAD
           git -C "$SRC" clean -fdx
           if [[ "$LOCAL_SHA" != "$REMOTE_SHA" ]]; then
-            git -C "$SRC" fetch --depth=50 origin "$ARENAMW_GIT_TAG"
+            if [[ "$ARENAMW_GIT_TAG" =~ ^[0-9a-fA-F]{40}$ ]]; then
+              # A pinned commit may no longer be the tip of any branch. Do not use
+              # a shallow fetch here: GitHub can expose the commit page while a
+              # shallow clone still lacks its tree/parents, which makes checkout fail.
+              git -C "$SRC" fetch --no-tags origin "$ARENAMW_GIT_TAG"
+            else
+              git -C "$SRC" fetch --depth=50 origin "$ARENAMW_GIT_TAG"
+            fi
             git -C "$SRC" checkout --detach "$REMOTE_SHA"
           fi
 
