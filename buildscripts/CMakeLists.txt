@@ -335,7 +335,8 @@ ExternalProject_Add(NG-GL4ES
 
 	# V13.7 configured NG-GL4ES in-source. Remove stale CMake state in case CI
 	# restores a partially configured ExternalProject source tree.
-	PATCH_COMMAND ${CMAKE_COMMAND} -E rm -f <SOURCE_DIR>/CMakeCache.txt
+	PATCH_COMMAND ${CMAKE_COMMAND} -DSOURCE_DIR=<SOURCE_DIR> -P ${CMAKE_CURRENT_SOURCE_DIR}/patches/gl4es/openmw3-android-regex.cmake
+	COMMAND ${CMAKE_COMMAND} -E rm -f <SOURCE_DIR>/CMakeCache.txt
 	COMMAND ${CMAKE_COMMAND} -E rm -rf <SOURCE_DIR>/CMakeFiles
 
 	# Openmw3 builds glslang and SPIRV-Cross from its pinned submodules with the
