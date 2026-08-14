@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto" xmlns:android="http://schemas.android.com/apk/res/android">
 	<PreferenceCategory android:title="@string/general_settings" android:key="general_settings">
-		<Preference android:title="@string/game_files" android:key="game_files" android:icon="@drawable/ic_file" />
+		<Preference android:title="@string/game_files" android:key="game_files" />
 		<Preference android:title="@string/mods" android:key="pref_mods" />
         <Preference
             android:key="pref_graphics_settings"
