@@ -357,8 +357,8 @@ if [[ "$GENERATE_DEBUG_SYMBOLS" == "true" ]]; then
 	cp "./build/$ARCH/sdl2-prefix/src/sdl2-build/obj/local/$ABI/libSDL2.so" "./symbols/$ABI/"
 	cp "./build/$ARCH/sdl2-prefix/src/sdl2-build/obj/local/$ABI/libhidapi.so" "./symbols/$ABI/"
 	cp "./build/$ARCH/arenamw-prefix/src/arenamw-build/libopenmw.so" "./symbols/$ABI/libopenmw.so"
-	# Unstripped NG-GL4ES artifacts (built in-source, CMake project — not ndk-build)
-	cp "./build/$ARCH/NG-GL4ES-prefix/src/NG-GL4ES/libng_gl4es.so" "./symbols/$ABI/"
+	# Unstripped NG-GL4ES artifact from the mandatory out-of-source CMake build.
+	cp "./build/$ARCH/NG-GL4ES-build/libng_gl4es.so" "./symbols/$ABI/"
 	cp "../app/src/main/jniLibs/$ABI/libc++_shared.so" "./symbols/$ABI/"
 	if [ $ASAN = true ]; then
 		cp ./toolchain/$ARCH/lib64/clang/*/lib/linux/libclang_rt.asan-$ASAN_ARCH-android.so "./symbols/$ABI/"

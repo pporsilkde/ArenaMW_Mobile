@@ -328,12 +328,20 @@ ExternalProject_Add(NG-GL4ES
 	UPDATE_DISCONNECTED TRUE
 	DOWNLOAD_DIR ${download_dir}
 
-	BUILD_IN_SOURCE 1
+	# Sisah2/Openmw3 vendors SPIRV-Cross. SPIRV-Cross deliberately refuses an
+	# in-source CMake build because it would overwrite its checked-in Makefile.
+	# Keep the complete wrapper build out-of-source.
+	BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/NG-GL4ES-build
+
+	# V13.7 configured NG-GL4ES in-source. Remove stale CMake state in case CI
+	# restores a partially configured ExternalProject source tree.
+	PATCH_COMMAND ${CMAKE_COMMAND} -E rm -f <SOURCE_DIR>/CMakeCache.txt
+	COMMAND ${CMAKE_COMMAND} -E rm -rf <SOURCE_DIR>/CMakeFiles
 
 	# Openmw3 builds glslang and SPIRV-Cross from its pinned submodules with the
 	# same Android NDK, so the old prebuilt-glslang std::filesystem ABI stub is
 	# intentionally not injected here.
-	CONFIGURE_COMMAND ${wrapper_command} cmake <SOURCE_DIR>
+	CONFIGURE_COMMAND ${wrapper_command} cmake -S <SOURCE_DIR> -B <BINARY_DIR>
 	${COMMON_CMAKE_ARGS}
 	-DINCLUDE_SPIRV_TOOLS=OFF
 
@@ -342,7 +350,7 @@ ExternalProject_Add(NG-GL4ES
 	# Openmw3 links SPIRV-Cross into libng_gl4es, so only the wrapper shared
 	# object itself is packaged. This also avoids stale old shared SPIRV-Cross.
 	INSTALL_COMMAND mkdir -p ${prefix}/lib/ ${prefix}/include/gl4es/
-	COMMAND cp libng_gl4es.so ${prefix}/lib/
+	COMMAND cp <BINARY_DIR>/libng_gl4es.so ${prefix}/lib/
 	COMMAND cp -r <SOURCE_DIR>/include/. ${prefix}/include/gl4es/
 	COMMAND cp -r <SOURCE_DIR>/include/. ${prefix}/include/
 )
