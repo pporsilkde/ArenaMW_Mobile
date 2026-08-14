@@ -62,7 +62,7 @@ project(arenamw-android)
 # ArenaMW source can be overridden from the command line, for example:
 #   cmake ... -DARENAMW_REPOSITORY=/absolute/path/to/ArenaMW -DARENAMW_GIT_TAG=main
 set(ARENAMW_REPOSITORY "https://github.com/pporsilkde/AMW.git" CACHE STRING "ArenaMW Git repository or local source path")
-set(ARENAMW_GIT_TAG "main" CACHE STRING "ArenaMW branch, tag or commit")
+set(ARENAMW_GIT_TAG "46b24244ab486de0f7cd51d64cbcf9ae042e8e92" CACHE STRING "ArenaMW branch, tag or commit")
 
 include(ExternalProject)
 
@@ -497,7 +497,7 @@ set(OPENMW_COMMON
 )
 
 set(ARENAMW_PATCH
-    # AMW2-native build-time patch pipeline. The source checkout stays clean in
+    # AMW3-native V16 build-time patch pipeline. The source checkout stays clean in
     # the repository; Android compatibility is applied only inside ExternalProject.
     bash ${CMAKE_SOURCE_DIR}/patches/openmw/apply-series.sh <SOURCE_DIR>
 )
@@ -520,7 +520,7 @@ ExternalProject_Add(arenamw
 
 	# Do not rely on ExternalProject's patch stamp for the cached ArenaMW checkout.
 	# CMake may legitimately skip PATCH_COMMAND after a cache restore/source update.
-	# Apply the complete AMW2 Android series immediately before every configure that
+	# Apply the complete AMW3 V16 Android patch immediately before every configure that
 	# ExternalProject decides is necessary. apply-series.sh resets the checkout to
 	# HEAD first, so this is deterministic and safe on both fresh and cached trees.
 	PATCH_COMMAND ""

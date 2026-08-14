@@ -1,3 +1,7 @@
+# ArenaMW Mobile AMW3 V16
+
+**Текущая активная схема:** AMW(3) + build-time engine patch + build-time Android-builder patch. См. `AMW3_PATCH_PIPELINE_V16_RU.md`. Старые V1–V15 документы оставлены только как история.
+
 # V15.3 MOC cache/pre-configure fix
 
 V15.3 переносит AMW2 build-time patch series из ненадёжного ExternalProject `PATCH_COMMAND` в обязательный pre-configure command. Это гарантирует установку совместимого `sse2neon v1.6.0` до сборки MaskedOcclusionCulling на NDK r21e даже после восстановления incremental cache. Подробности: `V15_3_MOC_PRECONFIGURE_FIX_RU.md`.
