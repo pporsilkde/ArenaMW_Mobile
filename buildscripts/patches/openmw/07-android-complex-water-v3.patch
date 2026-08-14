@@ -17,11 +17,11 @@ index 0875d4b..3c55e5e 100644
 +        osg::ref_ptr<osg::Shader> fragmentShader;
 +        if (pbr)
 +        {
-+            vertexShader = mResourceSystem->getSceneManager()->getShaderManager().getShader("water_pbr_vertex.glsl", osg::Shader::VERTEX);
++            vertexShader = shaderMgr.getShader("water_pbr_vertex.glsl", defineMap, osg::Shader::VERTEX);
 +#if defined(__ANDROID__)
-+            fragmentShader = mResourceSystem->getSceneManager()->getShaderManager().getShader("water_pbr_android_fragment.glsl", osg::Shader::FRAGMENT);
++            fragmentShader = shaderMgr.getShader("water_pbr_android_fragment.glsl", defineMap, osg::Shader::FRAGMENT);
 +#else
-+            fragmentShader = mResourceSystem->getSceneManager()->getShaderManager().getShader("water_pbr_fragment.glsl", osg::Shader::FRAGMENT);
++            fragmentShader = shaderMgr.getShader("water_pbr_fragment.glsl", defineMap, osg::Shader::FRAGMENT);
 +#endif
 +            if (!vertexShader || !fragmentShader)
 +                Log(Debug::Warning) << "Failed to load PBR water shaders, falling back to legacy water";

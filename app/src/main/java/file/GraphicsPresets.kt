@@ -22,11 +22,13 @@ object GraphicsPresets {
         val preloadDistance: Int,
         val preloadThreads: Int,
         val targetFramerate: Int,
+        val frameLimit: Float,
         val waterRtt: Int,
         val waterRefraction: Boolean,
         val waterReflectionDetail: Int,
         val shadowScope: String,
         val shadowResolution: Int,
+        val shadowDistance: Int,
         val grassEnabled: Boolean,
         val grassDensity: Float,
         val grassDistance: Int,
@@ -40,32 +42,32 @@ object GraphicsPresets {
         "very_low" to Preset(
             "CullDrawThreadPerContext", 1, 1, 1, 4, true,
             4096, .40f, -3, -3, 512, true, true,
-            1000, 1, 45, 256, false, 2,
-            "off", 512, true, .80f, 7100, "compatibility"
+            1000, 1, 60, 45.03f, 256, false, 2,
+            "off", 1024, 8192, true, .80f, 7100, "compatibility"
         ),
         "performance" to Preset(
             "CullDrawThreadPerContext", 1, 1, 1, 4, true,
             4096, .50f, -2, -3, 1024, true, false,
-            1200, 1, 45, 256, false, 2,
-            "off", 512, true, .65f, 5000, "compatibility"
+            1200, 1, 60, 45.0f, 256, false, 2,
+            "off", 512, 4096, true, .65f, 5000, "compatibility"
         ),
         "balanced" to Preset(
-            "CullDrawThreadPerContext", 2, 2, 1, 6, true,
+            "CullDrawThreadPerContext", 1, 1, 1, 6, true,
             5120, .65f, -1, -2, 1024, true, true,
-            1600, 2, 60, 256, true, 2,
-            "characters", 512, true, .80f, 6000, "compatibility"
+            1600, 1, 60, 60.0f, 256, true, 2,
+            "characters", 512, 5120, true, .80f, 6000, "compatibility"
         ),
         "quality" to Preset(
-            "CullDrawThreadPerContext", 2, 2, 1, 8, true,
+            "CullDrawThreadPerContext", 2, 1, 1, 8, true,
             6144, .80f, -1, -2, 2048, true, true,
-            2000, 2, 60, 512, true, 3,
-            "objects", 1024, true, 1.0f, 7100, "standard"
+            2000, 1, 60, 60.0f, 512, true, 3,
+            "objects", 1024, 6144, true, 1.0f, 7100, "standard"
         ),
         "battery" to Preset(
             "SingleThreaded", 1, 1, 1, 3, true,
             3072, .40f, -3, -3, 512, false, false,
-            800, 1, 30, 256, false, 1,
-            "off", 512, false, .50f, 3500, "compatibility"
+            800, 1, 30, 30.0f, 256, false, 1,
+            "off", 512, 3072, false, .50f, 3500, "compatibility"
         )
     )
 
@@ -104,6 +106,7 @@ object GraphicsPresets {
             waterRtt = waterRtt, waterRefraction = waterRefraction, waterReflectionDetail = waterReflection,
             shadowScope = prefs.getString("pref_gfx_shadows", "characters") ?: "characters",
             shadowResolution = ((prefs.getString("pref_gfx_shadow_map", "512") ?: "512").toIntOrNull() ?: 512).coerceIn(512, 1024),
+            shadowDistance = ((prefs.getString("pref_gfx_shadow_distance", "5120") ?: "5120").toIntOrNull() ?: 5120).coerceIn(1024, 8192),
             grassEnabled = grassEnabled, grassDensity = grassDensity, grassDistance = grassDistance,
             shaderProfile = prefs.getString("pref_gfx_shaders", "compatibility") ?: "compatibility"
         )
@@ -142,6 +145,7 @@ object GraphicsPresets {
         w("Cells", "target framerate", p.targetFramerate)
         w("Physics", "async num threads", p.asyncNumThreads)
         w("Video", "antialiasing", "0")
+        w("Video", "framerate limit", p.frameLimit)
 
         // Stable shader path. The launcher never enables the known black-screen
         // native depth effects, regardless of stale settings.cfg values.
@@ -178,7 +182,7 @@ object GraphicsPresets {
         w("Shadows", "enable indoor shadows", "false")
         w("Shadows", "shadow map resolution", p.shadowResolution.coerceAtMost(1024))
         w("Shadows", "number of shadow maps", if (shadowOn) "2" else "1")
-        w("Shadows", "maximum shadow map distance", p.viewingDistance.coerceAtMost(8192))
+        w("Shadows", "maximum shadow map distance", p.shadowDistance.coerceIn(0, 8192))
         w("Shadows", "shadow fade start", "0.82")
         w("Shadows", "allow shadow map overlap", "false")
         w("Shadows", "enhanced filtering", "false")

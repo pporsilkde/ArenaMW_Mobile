@@ -784,15 +784,15 @@
     <!-- ArenaMW mobile graphics window V13 -->
     <string name="pref_graphics_settings_title">Graphics</string>
     <string name="pref_graphics_settings_summary">Presets, terrain, preload, distance, water, shadows, grass and shaders</string>
-    <string name="gfx_overall">Overall preset</string><string name="gfx_safe_note">Mobile-safe limits: view/shadow distance up to 8192, shadow maps up to 1024. Unsafe native depth effects stay disabled.</string>
-    <string name="gfx_distance">Viewing distance</string><string name="gfx_terrain">Terrain quality</string><string name="gfx_preload">Preloading</string><string name="gfx_water">Water</string><string name="gfx_shadows">Shadows</string><string name="gfx_shadow_map">Shadow map</string><string name="gfx_grass">Grass</string><string name="gfx_shaders">Shaders</string><string name="gfx_apply">Apply settings</string><string name="gfx_applied">Graphics settings saved</string>
+    <string name="gfx_overall">Overall preset</string><string name="gfx_safe_note">Mobile-safe limits: shadow distance up to 8192 and shadow maps up to 1024. World viewing distance is configured separately. Unsafe native depth effects stay disabled.</string>
+    <string name="gfx_distance">Viewing distance</string><string name="gfx_terrain">Terrain quality</string><string name="gfx_preload">Preloading</string><string name="gfx_water">Water</string><string name="gfx_shadows">Shadows</string><string name="gfx_shadow_map">Shadow map</string><string name="gfx_shadow_distance">Shadow distance</string><string name="gfx_grass">Grass</string><string name="gfx_shaders">Shaders</string><string name="gfx_apply">Apply settings</string><string name="gfx_applied">Graphics settings saved</string>
     <string-array name="gfx_preset_entries"><item>Very Low — reference profile</item><item>Performance</item><item>Balanced</item><item>Quality</item><item>Battery saver</item><item>Custom</item></string-array>
     <string-array name="gfx_distance_entries"><item>3072</item><item>4096</item><item>5120</item><item>6144</item><item>8192</item></string-array>
     <string-array name="gfx_terrain_entries"><item>Very Low</item><item>Low</item><item>Balanced</item><item>Medium (maximum mobile)</item></string-array>
     <string-array name="gfx_preload_entries"><item>Low / 1 worker</item><item>Balanced</item><item>High / 2 workers</item></string-array>
     <string-array name="gfx_water_entries"><item>Low — 256, no refraction</item><item>Balanced — 256</item><item>High — 512</item></string-array>
     <string-array name="gfx_shadow_entries"><item>Off</item><item>Player + actors</item><item>Player + actors + objects</item></string-array>
-    <string-array name="gfx_shadow_map_entries"><item>512</item><item>1024 (maximum mobile)</item></string-array>
+    <string-array name="gfx_shadow_map_entries"><item>512</item><item>1024 (maximum mobile)</item></string-array><string-array name="gfx_shadow_distance_entries"><item>1024</item><item>2048</item><item>4096</item><item>6144</item><item>8192 (maximum)</item></string-array>
     <string-array name="gfx_grass_entries"><item>Off</item><item>Low</item><item>Balanced</item><item>High</item></string-array>
     <string-array name="gfx_shader_entries"><item>Compatibility (recommended)</item><item>Standard normal/spec maps</item></string-array>
 

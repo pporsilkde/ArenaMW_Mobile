@@ -32,6 +32,8 @@
             <Spinner android:id="@+id/gfx_shadows" android:layout_width="match_parent" android:layout_height="48dp" />
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/gfx_shadow_map" android:textColor="@color/textPrimary" />
             <Spinner android:id="@+id/gfx_shadow_map" android:layout_width="match_parent" android:layout_height="48dp" />
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/gfx_shadow_distance" android:textColor="@color/textPrimary" />
+            <Spinner android:id="@+id/gfx_shadow_distance" android:layout_width="match_parent" android:layout_height="48dp" />
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/gfx_grass" android:textColor="@color/textPrimary" />
             <Spinner android:id="@+id/gfx_grass" android:layout_width="match_parent" android:layout_height="48dp" />
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/gfx_shaders" android:textColor="@color/textPrimary" />

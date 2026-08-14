@@ -545,15 +545,15 @@
     <!-- ArenaMW mobile graphics window V13 -->
     <string name="pref_graphics_settings_title">Графика</string>
     <string name="pref_graphics_settings_summary">Пресеты, ландшафт, предзагрузка, дистанция, вода, тени, трава и шейдеры</string>
-    <string name="gfx_overall">Общий пресет</string><string name="gfx_safe_note">Безопасные мобильные пределы: дистанция до 8192, карта теней до 1024. Нерабочие native depth-эффекты всегда выключены.</string>
-    <string name="gfx_distance">Дистанция</string><string name="gfx_terrain">Качество ландшафта</string><string name="gfx_preload">Предзагрузка</string><string name="gfx_water">Вода</string><string name="gfx_shadows">Тени</string><string name="gfx_shadow_map">Карта теней</string><string name="gfx_grass">Трава</string><string name="gfx_shaders">Шейдеры</string><string name="gfx_apply">Применить настройки</string><string name="gfx_applied">Настройки графики сохранены</string>
+    <string name="gfx_overall">Общий пресет</string><string name="gfx_safe_note">Безопасные мобильные пределы: дальность теней до 8192, карта теней до 1024. Дистанция мира настраивается отдельно. Нерабочие native depth-эффекты всегда выключены.</string>
+    <string name="gfx_distance">Дистанция мира</string><string name="gfx_terrain">Качество ландшафта</string><string name="gfx_preload">Предзагрузка</string><string name="gfx_water">Вода</string><string name="gfx_shadows">Тени</string><string name="gfx_shadow_map">Карта теней</string><string name="gfx_shadow_distance">Дальность теней</string><string name="gfx_grass">Трава</string><string name="gfx_shaders">Шейдеры</string><string name="gfx_apply">Применить настройки</string><string name="gfx_applied">Настройки графики сохранены</string>
     <string-array name="gfx_preset_entries"><item>Очень низкие — эталон</item><item>Производительность</item><item>Баланс</item><item>Качество</item><item>Энергосбережение</item><item>Свои настройки</item></string-array>
     <string-array name="gfx_distance_entries"><item>3072</item><item>4096</item><item>5120</item><item>6144</item><item>8192</item></string-array>
     <string-array name="gfx_terrain_entries"><item>Очень низкое</item><item>Низкое</item><item>Баланс</item><item>Среднее (максимум Android)</item></string-array>
     <string-array name="gfx_preload_entries"><item>Низкая / 1 поток</item><item>Баланс</item><item>Высокая / 2 потока</item></string-array>
     <string-array name="gfx_water_entries"><item>Низкое — 256, без преломления</item><item>Баланс — 256</item><item>Высокое — 512</item></string-array>
     <string-array name="gfx_shadow_entries"><item>Выключены</item><item>Игрок + персонажи</item><item>Игрок + персонажи + объекты</item></string-array>
-    <string-array name="gfx_shadow_map_entries"><item>512</item><item>1024 (максимум Android)</item></string-array>
+    <string-array name="gfx_shadow_map_entries"><item>512</item><item>1024 (максимум Android)</item></string-array><string-array name="gfx_shadow_distance_entries"><item>1024</item><item>2048</item><item>4096</item><item>6144</item><item>8192 (максимум)</item></string-array>
     <string-array name="gfx_grass_entries"><item>Выключена</item><item>Низко</item><item>Баланс</item><item>Высоко</item></string-array>
     <string-array name="gfx_shader_entries"><item>Совместимость (рекомендуется)</item><item>Обычные normal/spec карты</item></string-array>
 

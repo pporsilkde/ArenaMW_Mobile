@@ -21,6 +21,7 @@ class GraphicsSettingsActivity : AppCompatActivity() {
     private lateinit var water: Spinner
     private lateinit var shadows: Spinner
     private lateinit var shadowMap: Spinner
+    private lateinit var shadowDistance: Spinner
     private lateinit var grass: Spinner
     private lateinit var shaders: Spinner
     private var ready = false
@@ -33,6 +34,7 @@ class GraphicsSettingsActivity : AppCompatActivity() {
     private val waterValues = listOf("low", "balanced", "high")
     private val shadowValues = listOf("off", "characters", "objects")
     private val shadowMapValues = listOf("512", "1024")
+    private val shadowDistanceValues = listOf("1024", "2048", "4096", "6144", "8192")
     private val grassValues = listOf("off", "low", "balanced", "high")
     private val shaderValues = listOf("compatibility", "standard")
 
@@ -46,7 +48,8 @@ class GraphicsSettingsActivity : AppCompatActivity() {
         preset = findViewById(R.id.gfx_preset); distance = findViewById(R.id.gfx_distance)
         terrain = findViewById(R.id.gfx_terrain); preload = findViewById(R.id.gfx_preload)
         water = findViewById(R.id.gfx_water); shadows = findViewById(R.id.gfx_shadows)
-        shadowMap = findViewById(R.id.gfx_shadow_map); grass = findViewById(R.id.gfx_grass)
+        shadowMap = findViewById(R.id.gfx_shadow_map); shadowDistance = findViewById(R.id.gfx_shadow_distance)
+        grass = findViewById(R.id.gfx_grass)
         shaders = findViewById(R.id.gfx_shaders)
 
         bind(preset, R.array.gfx_preset_entries)
@@ -56,6 +59,7 @@ class GraphicsSettingsActivity : AppCompatActivity() {
         bind(water, R.array.gfx_water_entries)
         bind(shadows, R.array.gfx_shadow_entries)
         bind(shadowMap, R.array.gfx_shadow_map_entries)
+        bind(shadowDistance, R.array.gfx_shadow_distance_entries)
         bind(grass, R.array.gfx_grass_entries)
         bind(shaders, R.array.gfx_shader_entries)
 
@@ -68,6 +72,7 @@ class GraphicsSettingsActivity : AppCompatActivity() {
             select(water, waterValues, prefs.getString("pref_gfx_water", "balanced") ?: "balanced")
             select(shadows, shadowValues, prefs.getString("pref_gfx_shadows", "characters") ?: "characters")
             select(shadowMap, shadowMapValues, prefs.getString("pref_gfx_shadow_map", "512") ?: "512")
+            select(shadowDistance, shadowDistanceValues, prefs.getString("pref_gfx_shadow_distance", "5120") ?: "5120")
             select(grass, grassValues, prefs.getString("pref_gfx_grass", "balanced") ?: "balanced")
             select(shaders, shaderValues, prefs.getString("pref_gfx_shaders", "compatibility") ?: "compatibility")
         } else loadPreset(value(preset, presetValues))
@@ -81,7 +86,7 @@ class GraphicsSettingsActivity : AppCompatActivity() {
                 if (idValue != "custom") loadPreset(idValue)
             }
         }
-        listOf(distance, terrain, preload, water, shadows, shadowMap, grass, shaders).forEach { spinner ->
+        listOf(distance, terrain, preload, water, shadows, shadowMap, shadowDistance, grass, shaders).forEach { spinner ->
             spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
                 override fun onNothingSelected(parent: AdapterView<*>?) {}
                 override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
@@ -100,6 +105,7 @@ class GraphicsSettingsActivity : AppCompatActivity() {
                 .putString("pref_gfx_water", value(water, waterValues))
                 .putString("pref_gfx_shadows", value(shadows, shadowValues))
                 .putString("pref_gfx_shadow_map", value(shadowMap, shadowMapValues))
+                .putString("pref_gfx_shadow_distance", value(shadowDistance, shadowDistanceValues))
                 .putString("pref_gfx_grass", value(grass, grassValues))
                 .putString("pref_gfx_shaders", value(shaders, shaderValues))
                 .apply()
@@ -127,6 +133,7 @@ class GraphicsSettingsActivity : AppCompatActivity() {
         select(water, waterValues, when { !p.waterRefraction -> "low"; p.waterRtt >= 512 -> "high"; else -> "balanced" })
         select(shadows, shadowValues, p.shadowScope)
         select(shadowMap, shadowMapValues, p.shadowResolution.toString())
+        select(shadowDistance, shadowDistanceValues, p.shadowDistance.toString())
         select(grass, grassValues, when { !p.grassEnabled -> "off"; p.grassDensity < .7f -> "low"; p.grassDensity >= .95f -> "high"; else -> "balanced" })
         select(shaders, shaderValues, p.shaderProfile)
         applyingPreset = false

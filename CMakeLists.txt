@@ -62,7 +62,7 @@ project(arenamw-android)
 # ArenaMW source can be overridden from the command line, for example:
 #   cmake ... -DARENAMW_REPOSITORY=/absolute/path/to/ArenaMW -DARENAMW_GIT_TAG=main
 set(ARENAMW_REPOSITORY "https://github.com/pporsilkde/AMW.git" CACHE STRING "ArenaMW Git repository or local source path")
-set(ARENAMW_GIT_TAG "58593129ea34fb277e1adf32422ca907a91c85e2" CACHE STRING "ArenaMW branch, tag or commit")
+set(ARENAMW_GIT_TAG "main" CACHE STRING "ArenaMW branch, tag or commit")
 
 include(ExternalProject)
 
@@ -510,7 +510,7 @@ set(ARENAMW_PATCH
 	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/10-android-complex-water-geometry-shadows-v6.patch &&
 	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/11-android-gles-shadow-matrix-v7.patch &&
 	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/12-android-mobile-tuning-v8.patch &&
-	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/16-android-mobile-settings-ui-v13.patch &&
+	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/16-android-mobile-settings-ui-v13-2.patch &&
 	cp ${CMAKE_SOURCE_DIR}/patches/openmw/android_main.cpp <SOURCE_DIR>/apps/openmw/android_main.cpp &&
 	sh ${CMAKE_SOURCE_DIR}/patches/openmw/patch-sse2neon.sh <SOURCE_DIR>
 )
