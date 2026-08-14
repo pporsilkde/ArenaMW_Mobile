@@ -28,6 +28,7 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import file.GameInstaller
+import file.BuildManifest
 import kotlinx.android.synthetic.main.activity_mods.*
 import mods.*
 import android.view.MenuItem
@@ -56,6 +57,10 @@ class ModsActivity : AppCompatActivity() {
             override fun onTabReselected(tab: TabLayout.Tab) {
             }
         })
+
+        // Import desktop-compatible build.ini before presenting the lists.
+        // Editing the lists below then updates the same manifest on exit.
+        BuildManifest.applyToDatabase(this)
 
         // Set up adapters for the lists
         setupModList(findViewById(R.id.list_mods), ModType.Plugin)
@@ -86,6 +91,13 @@ class ModsActivity : AppCompatActivity() {
         adapter.touchHelper = touchHelper
 
         list.adapter = adapter
+    }
+
+
+    override fun onPause() {
+        super.onPause()
+        // Persist enabled state and exact load order to portable build.ini.
+        BuildManifest.writeFromDatabase(this)
     }
 
     /**

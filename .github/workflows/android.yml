@@ -28,7 +28,7 @@ jobs:
       GENERATE_DEBUG_SYMBOLS: "false"
       ARENAMW_REPOSITORY: https://github.com/pporsilkde/AMW.git
       ARENAMW_GIT_TAG: main
-      ARENAMW_INCREMENTAL_CACHE_EPOCH: arenamw-android-arm64-amw3-v16-2-main
+      ARENAMW_INCREMENTAL_CACHE_EPOCH: arenamw-android-arm64-inc-v1
       GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx3g
 
     steps:
@@ -44,35 +44,6 @@ jobs:
           chmod +x gradlew
           if [ -f storagechooser/gradlew ]; then chmod +x storagechooser/gradlew; fi
           if [ -f CI/travis.sh ]; then chmod +x CI/travis.sh; fi
-
-      - name: Apply Android builder compatibility patches
-        shell: bash
-        run: |
-          set -euo pipefail
-          shopt -s nullglob
-          patches=(buildscripts/patches/android-builder/*.patch)
-          if [ ${#patches[@]} -eq 0 ]; then
-            echo "No Android builder compatibility patches"
-            exit 0
-          fi
-          for patch_file in "${patches[@]}"; do
-            echo "==> Checking ${patch_file}"
-            if git apply --check "${patch_file}"; then
-              git apply "${patch_file}"
-              echo "==> Applied ${patch_file}"
-            elif git apply --reverse --check "${patch_file}"; then
-              echo "==> Already applied: ${patch_file}"
-            else
-              echo "Patch does not apply cleanly: ${patch_file}" >&2
-              exit 1
-            fi
-          done
-          grep -q 'fun applyOrderedSelection(ordered: List<String>, authoritative: Boolean)' \
-            app/src/main/java/mods/ModsCollection.kt
-          grep -q 'APPLY_PENDING_KEY = "pref_graphics_apply_pending_v16"' \
-            app/src/main/java/file/GraphicsPresets.kt
-          grep -q 'LIBGL_RECYCLEFBO' app/src/main/java/ui/activity/GameActivity.kt
-          test -f app/src/main/res/layout/preference_category_header.xml
 
       - name: Install native build tools
         run: |
@@ -114,7 +85,7 @@ jobs:
             buildscripts/toolchain
             buildscripts/prefix/arm64
             buildscripts/build/arm64
-          key: arenamw-original-r21e-arm64-v6-nolto-${{ hashFiles('buildscripts/build.sh', 'buildscripts/CMakeLists.txt', 'buildscripts/include/version.sh', 'buildscripts/patches/*', 'buildscripts/patches/gl4es/**', 'buildscripts/patches/ng-gl4es/**', 'buildscripts/patches/osg/**') }}
+          key: arenamw-original-r21e-arm64-v6-nolto-${{ hashFiles('buildscripts/build.sh', 'buildscripts/CMakeLists.txt', 'buildscripts/include/version.sh', 'buildscripts/patches/**') }}
           restore-keys: |
             arenamw-original-r21e-arm64-v6-nolto-
 
@@ -149,7 +120,7 @@ jobs:
             buildscripts/toolchain
             buildscripts/prefix/arm64
             buildscripts/build/arm64
-          key: arenamw-original-r21e-arm64-v6-nolto-${{ hashFiles('buildscripts/build.sh', 'buildscripts/CMakeLists.txt', 'buildscripts/include/version.sh', 'buildscripts/patches/*', 'buildscripts/patches/gl4es/**', 'buildscripts/patches/ng-gl4es/**', 'buildscripts/patches/osg/**') }}
+          key: arenamw-original-r21e-arm64-v6-nolto-${{ hashFiles('buildscripts/build.sh', 'buildscripts/CMakeLists.txt', 'buildscripts/include/version.sh', 'buildscripts/patches/**') }}
 
       - name: Drop ArenaMW incremental tree on request
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.clean_arenamw_build == true }}
@@ -165,12 +136,9 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: buildscripts/build/arm64/arenamw-prefix
-          # Keep the cache identity stable across patch revisions. Patch changes are
-          # detected separately below and invalidate only ExternalProject patch/configure
-          # stamps, preserving unaffected .o files and third-party native dependencies.
-          key: ${{ env.ARENAMW_INCREMENTAL_CACHE_EPOCH }}-${{ github.run_id }}-${{ github.run_attempt }}
+          key: ${{ env.ARENAMW_INCREMENTAL_CACHE_EPOCH }}-${{ hashFiles('buildscripts/build.sh', 'buildscripts/CMakeLists.txt', 'buildscripts/include/version.sh', 'buildscripts/patches/openmw/**', '.github/workflows/android.yml') }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
-            ${{ env.ARENAMW_INCREMENTAL_CACHE_EPOCH }}-
+            ${{ env.ARENAMW_INCREMENTAL_CACHE_EPOCH }}-${{ hashFiles('buildscripts/build.sh', 'buildscripts/CMakeLists.txt', 'buildscripts/include/version.sh', 'buildscripts/patches/openmw/**', '.github/workflows/android.yml') }}-
 
       # ExternalProject keeps the checked-out AMW repository inside arenamw-prefix.
       # If upstream/main did not move, leave that tree completely untouched so its
@@ -196,69 +164,36 @@ jobs:
 
           git -C "$SRC" remote set-url origin "$ARENAMW_REPOSITORY"
           LOCAL_SHA="$(git -C "$SRC" rev-parse HEAD)"
-          if [[ "$ARENAMW_GIT_TAG" =~ ^[0-9a-fA-F]{40}$ ]]; then
-            REMOTE_SHA="${ARENAMW_GIT_TAG,,}"
-          else
-            REMOTE_SHA="$(git ls-remote "$ARENAMW_REPOSITORY" "refs/heads/$ARENAMW_GIT_TAG" | awk 'NR==1 {print $1}')"
-            if [[ -z "$REMOTE_SHA" ]]; then
-              REMOTE_SHA="$(git ls-remote "$ARENAMW_REPOSITORY" "$ARENAMW_GIT_TAG" | awk 'NR==1 {print $1}')"
-            fi
-          fi
+          REMOTE_SHA="$(git ls-remote "$ARENAMW_REPOSITORY" "refs/heads/$ARENAMW_GIT_TAG" | awk 'NR==1 {print $1}')"
           if [[ -z "$REMOTE_SHA" ]]; then
-            echo "Could not resolve $ARENAMW_REPOSITORY at $ARENAMW_GIT_TAG" >&2
+            echo "Could not resolve $ARENAMW_REPOSITORY refs/heads/$ARENAMW_GIT_TAG" >&2
             exit 1
           fi
 
-          PATCH_HASH_FILE="$STAMP/arenamw-patch-input.sha256"
-          CURRENT_PATCH_HASH="$(
-            {
-              sha256sum buildscripts/CMakeLists.txt
-              find buildscripts/patches/openmw -maxdepth 1 -type f -print0 | sort -z | xargs -0 sha256sum
-            } | sha256sum | awk '{print $1}'
-          )"
-          CACHED_PATCH_HASH="$(cat "$PATCH_HASH_FILE" 2>/dev/null || true)"
-
+          PATCH_STAMP="$STAMP/arenamw-patch"
           echo "==> Cached ArenaMW base: $LOCAL_SHA"
           echo "==> Upstream ArenaMW base: $REMOTE_SHA"
-          echo "==> Current patch fingerprint: $CURRENT_PATCH_HASH"
-          echo "==> Cached patch fingerprint: ${CACHED_PATCH_HASH:-<none>}"
 
-          if [[ "$LOCAL_SHA" == "$REMOTE_SHA" && "$CACHED_PATCH_HASH" == "$CURRENT_PATCH_HASH" ]]; then
-            echo '==> ArenaMW source and pre-configure patch set are unchanged; preserving source/object mtimes for a true incremental build'
+          if [[ "$LOCAL_SHA" == "$REMOTE_SHA" && -f "$PATCH_STAMP" ]]; then
+            echo '==> ArenaMW source is unchanged; preserving source/object mtimes for a true incremental build'
             exit 0
           fi
 
-          echo '==> ArenaMW source or patch set changed; resetting only the patched checkout and ExternalProject stamps'
+          echo '==> ArenaMW source or patch state changed; updating checkout without deleting the build tree'
           # Android compatibility patches leave the checkout dirty by design. Revert
-          # them before moving to the new upstream commit. The ArenaMW ExternalProject
-          # applies the numbered series again as its mandatory pre-configure command.
-          # The binary directory is preserved, so only affected sources are rebuilt.
+          # them before moving to the new upstream commit, then let ExternalProject
+          # apply them once again via the invalidated patch stamp.
           git -C "$SRC" reset --hard HEAD
           git -C "$SRC" clean -fdx
-          if [[ "$LOCAL_SHA" != "$REMOTE_SHA" ]]; then
-            if [[ "$ARENAMW_GIT_TAG" =~ ^[0-9a-fA-F]{40}$ ]]; then
-              # A pinned commit may no longer be the tip of any branch. Do not use
-              # a shallow fetch here: GitHub can expose the commit page while a
-              # shallow clone still lacks its tree/parents, which makes checkout fail.
-              git -C "$SRC" fetch --no-tags origin "$ARENAMW_GIT_TAG"
-            else
-              git -C "$SRC" fetch --depth=50 origin "$ARENAMW_GIT_TAG"
-            fi
-            git -C "$SRC" checkout --detach "$REMOTE_SHA"
-          fi
+          git -C "$SRC" fetch --depth=50 origin "$ARENAMW_GIT_TAG"
+          git -C "$SRC" checkout --detach "$REMOTE_SHA"
 
           rm -f \
             "$STAMP/arenamw-patch" \
-            "$STAMP/arenamw-patch_disconnected" \
             "$STAMP/arenamw-configure" \
             "$STAMP/arenamw-build" \
             "$STAMP/arenamw-install" \
             "$STAMP/arenamw-done"
-          mkdir -p "$STAMP"
-          # Do not record CURRENT_PATCH_HASH here. It is committed only after the
-          # native target succeeds, proving that pre-configure patching (including
-          # the pinned MOC sse2neon header) really reached the compiled tree.
-          rm -f "$PATCH_HASH_FILE"
 
       - name: Ensure linker safety swap
         shell: bash
@@ -305,40 +240,6 @@ jobs:
         working-directory: buildscripts
         run: bash ./build.sh --arch arm64 --ccache --release --client-only
 
-      # PATCH_COMMAND is intentionally disabled for ArenaMW because restored
-      # ExternalProject state may skip that stage. The complete mobile series is
-      # applied as the first CONFIGURE_COMMAND instead. Record the fingerprint only
-      # after libopenmw.so was built successfully, and verify that the legacy-Clang
-      # compatible MOC header is the one that actually reached the source tree.
-      - name: Record verified ArenaMW patch fingerprint
-        shell: bash
-        run: |
-          set -euo pipefail
-          STAMP="buildscripts/build/arm64/arenamw-prefix/src/arenamw-stamp"
-          SRC="buildscripts/build/arm64/arenamw-prefix/src/arenamw"
-          BIN="buildscripts/build/arm64/arenamw-prefix/src/arenamw-build/libopenmw.so"
-          MOC_HEADER="$SRC/extern/maskedoc/sse2neon.h"
-
-          [[ -s "$BIN" ]] || { echo 'libopenmw.so is missing; refusing to record patch fingerprint' >&2; exit 1; }
-          [[ -s "$MOC_HEADER" ]] || { echo 'MOC sse2neon.h is missing after native build' >&2; exit 1; }
-          if grep -q 'Clang versions earlier than 11 are not supported' "$MOC_HEADER"; then
-            echo 'Modern sse2neon header reached the NDK r21e build tree; compatibility install did not run' >&2
-            exit 1
-          fi
-          grep -q 'SSE2NEON_PRECISE_MINMAX' "$MOC_HEADER"
-          grep -q '_mm_dp_ps' "$MOC_HEADER"
-          echo "==> Verified MOC compatibility header: $(sha256sum "$MOC_HEADER" | awk '{print $1}')"
-
-          CURRENT_PATCH_HASH="$(
-            {
-              sha256sum buildscripts/CMakeLists.txt
-              find buildscripts/patches/openmw -maxdepth 1 -type f -print0 | sort -z | xargs -0 sha256sum
-            } | sha256sum | awk '{print $1}'
-          )"
-          mkdir -p "$STAMP"
-          printf '%s\n' "$CURRENT_PATCH_HASH" > "$STAMP/arenamw-patch-input.sha256"
-          echo "==> Recorded verified patch fingerprint: $CURRENT_PATCH_HASH"
-
       # GitHub cache entries are immutable, therefore every run writes a new key
       # and the next run restores the newest compatible prefix via restore-keys.
       # Save even after a compiler error: successfully produced .o files remain
@@ -348,7 +249,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: buildscripts/build/arm64/arenamw-prefix
-          key: ${{ env.ARENAMW_INCREMENTAL_CACHE_EPOCH }}-${{ github.run_id }}-${{ github.run_attempt }}
+          key: ${{ env.ARENAMW_INCREMENTAL_CACHE_EPOCH }}-${{ hashFiles('buildscripts/build.sh', 'buildscripts/CMakeLists.txt', 'buildscripts/include/version.sh', 'buildscripts/patches/openmw/**', '.github/workflows/android.yml') }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       # Keep the complete compiler/linker log even when the native step fails.
       # This avoids the GitHub UI ending at "100%" with the real linker error hidden.

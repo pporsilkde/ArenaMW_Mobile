@@ -8,7 +8,7 @@ export ARCH="arm"
 export CCACHE="false"
 ASAN="false"
 DEPLOY_RESOURCES="true"
-LTO="true"
+LTO="${LTO:-false}"
 LTO_JOBS="${LTO_JOBS:-1}"
 GENERATE_DEBUG_SYMBOLS="${GENERATE_DEBUG_SYMBOLS:-true}"
 BUILD_TYPE="release"
@@ -129,6 +129,7 @@ echo "Build configuration:"
 echo " - Architecture: $ARCH"
 echo " - Build type: $BUILD_TYPE"
 echo " - AddressSanitizer: $ASAN"
+echo " - LTO enabled: $LTO"
 echo " - ThinLTO jobs: $LTO_JOBS"
 echo " - Generate debug symbol index: $GENERATE_DEBUG_SYMBOLS"
 echo ""
@@ -164,6 +165,9 @@ mkdir -p prefix/$ARCH/
 
 # symlink lib64 -> lib so we don't get half the libs in one directory half in another
 mkdir -p prefix/$ARCH/lib
+# A fresh dependency cache has no prefix/include yet. NG-GL4ES installs
+# its headers before several other dependencies, so create it explicitly.
+mkdir -p prefix/$ARCH/include
 ln -sf lib prefix/$ARCH/lib64
 mkdir -p prefix/$ARCH/osg/lib
 ln -sf lib prefix/$ARCH/osg/lib64
@@ -198,7 +202,7 @@ cmake ../.. \
 	-DFFMPEG_CPU=$FFMPEG_CPU \
 	-DBUILD_JOBS="$NCPU" \
 	-DARENAMW_REPOSITORY="${ARENAMW_REPOSITORY:-https://github.com/pporsilkde/AMW.git}" \
-	-DARENAMW_GIT_TAG="${ARENAMW_GIT_TAG:-main}"
+	-DARENAMW_GIT_TAG="${ARENAMW_GIT_TAG:-58593129ea34fb277e1adf32422ca907a91c85e2}"
 
 # Native dependency caches are restored by CI. ArenaMW has no master/server target.
 

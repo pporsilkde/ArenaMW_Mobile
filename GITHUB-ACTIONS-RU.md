@@ -4,7 +4,7 @@
 
 ## Что собирается
 
-- Исходник движка: `https://github.com/MrZer0x0/ArenaMW.git`
+- Исходник движка: `https://github.com/pporsilkde/AMW.git`
 - Ветка по умолчанию: `main`
 - ABI: `arm64-v8a`
 - Native build: Release (`-O3`, ThinLTO — как в исходном builder)

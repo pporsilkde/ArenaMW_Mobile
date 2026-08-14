@@ -480,6 +480,34 @@
         <item>ERROR</item>
     </string-array>
 
+    <!-- ================= Графика и тени ================= -->
+    <string name="pref_graphics_preset_category">Графика и тени</string>
+    <string name="pref_graphics_preset">Пресет графики</string>
+    <string name="pref_graphics_preset_summary">Стабильные мобильные пресеты: без очень высокого ландшафта и проблемных постэффектов.</string>
+    <string name="pref_shadow_scope">Тени</string>
+    <string name="pref_shadow_quality">Качество карты теней</string>
+
+    <string-array name="pref_graphics_preset_entries">
+        <item>Авто (сохранить текущие настройки)</item>
+        <item>Качество — средний ландшафт + тени объектов</item>
+        <item>Баланс — умеренный ландшафт + тени персонажей</item>
+        <item>Производительность — сниженный ландшафт, тени выкл.</item>
+        <item>Энергосбережение — минимум ландшафта, тени выкл.</item>
+    </string-array>
+
+    <string-array name="pref_shadow_scope_entries">
+        <item>Как в пресете графики</item>
+        <item>Выключены</item>
+        <item>Игрок + персонажи</item>
+        <item>Игрок + персонажи + объекты</item>
+    </string-array>
+
+    <string-array name="pref_shadow_quality_entries">
+        <item>Как в пресете графики</item>
+        <item>512 (быстро)</item>
+        <item>1024 (максимум Android)</item>
+    </string-array>
+
     <!-- ================= Кнопки обновления ================= -->
     <string name="btn_update_desc">Скачать обновление</string>
     <string name="btn_globe_desc">Открыть morrowind.site</string>
@@ -514,39 +542,19 @@
     <string name="update_server_saved">Сервер обновлений:\n%1$s</string>
     <string name="update_server_reset">Сбросить к умолчанию</string>
 
-    <!-- ================= AMW2 мобильная графика V15 ================= -->
-    <string name="pref_graphics_button">Графика и производительность…</string>
-    <string name="pref_graphics_button_summary_default">Автоматический мобильный профиль</string>
-    <string name="pref_graphics_button_summary">Профиль: %1$s</string>
-    <string name="pref_graphics_button_summary_auto">Авто-профиль: %1$s</string>
-    <string name="pref_graphics_dialog_intro">При первом запуске лаунчер автоматически выбирает безопасный профиль. Изменение любой отдельной категории переводит общий профиль в «Пользовательский». Карта теней жёстко ограничена 1024, дальность теней — 8192.</string>
-    <string name="pref_graphics_master">Общий профиль графики</string>
-    <string name="pref_graphics_auto_detected">Рекомендация для устройства: %1$s</string>
-        <string name="pref_graphics_level_auto">Авто</string>
-    <string name="pref_graphics_level_custom">Пользовательский</string>
-<string name="pref_graphics_level_low">Низкое</string>
-    <string name="pref_graphics_level_medium">Среднее</string>
-    <string name="pref_graphics_level_high">Высокое</string>
-    <string name="pref_graphics_level_ultra">Ультра</string>
-    <string name="pref_graphics_osg">OSG / рендерер</string>
-    <string name="pref_graphics_osg_hint">Потоки рендера, database pager и кэш шейдеров.</string>
-    <string name="pref_graphics_streaming">Дальность и предзагрузка</string>
-    <string name="pref_graphics_streaming_hint">Дальность прорисовки, preload клеток, кэш и фоновые потоки.</string>
-    <string name="pref_graphics_terrain">Ландшафт</string>
-    <string name="pref_graphics_terrain_hint">LOD ландшафта, composite maps и object paging.</string>
-    <string name="pref_graphics_shaders">Шейдеры / PBR</string>
-    <string name="pref_graphics_shaders_hint">Качество материалов, PBR-карты и стоимость отражений воды.</string>
-    <string name="pref_graphics_lighting">Освещение</string>
-    <string name="pref_graphics_lighting_hint">Количество источников, per-pixel lighting и radial fog.</string>
-    <string name="pref_graphics_shadows">Тени</string>
-    <string name="pref_graphics_shadows_hint">Объекты, размер карты и дальность. Жёсткие лимиты движка: 1024 / 8192.</string>
-    <string name="pref_graphics_grass">Трава</string>
-    <string name="pref_graphics_grass_hint">Плотность groundcover, дальность и размер чанков.</string>
-    <string-array name="pref_graphics_master_entries">
-        <item>Авто</item><item>Низкое</item><item>Среднее</item><item>Высокое</item><item>Ультра</item><item>Пользовательский</item>
-    </string-array>
-    <string-array name="pref_graphics_detail_entries">
-        <item>Низкое</item><item>Среднее</item><item>Высокое</item><item>Ультра</item>
-    </string-array>
+    <!-- ArenaMW mobile graphics window V13 -->
+    <string name="pref_graphics_settings_title">Графика</string>
+    <string name="pref_graphics_settings_summary">Пресеты, ландшафт, предзагрузка, дистанция, вода, тени, трава и шейдеры</string>
+    <string name="gfx_overall">Общий пресет</string><string name="gfx_safe_note">Безопасные мобильные пределы: дистанция до 8192, карта теней до 1024. Нерабочие native depth-эффекты всегда выключены.</string>
+    <string name="gfx_distance">Дистанция</string><string name="gfx_terrain">Качество ландшафта</string><string name="gfx_preload">Предзагрузка</string><string name="gfx_water">Вода</string><string name="gfx_shadows">Тени</string><string name="gfx_shadow_map">Карта теней</string><string name="gfx_grass">Трава</string><string name="gfx_shaders">Шейдеры</string><string name="gfx_apply">Применить настройки</string><string name="gfx_applied">Настройки графики сохранены</string>
+    <string-array name="gfx_preset_entries"><item>Очень низкие — эталон</item><item>Производительность</item><item>Баланс</item><item>Качество</item><item>Энергосбережение</item><item>Свои настройки</item></string-array>
+    <string-array name="gfx_distance_entries"><item>3072</item><item>4096</item><item>5120</item><item>6144</item><item>8192</item></string-array>
+    <string-array name="gfx_terrain_entries"><item>Очень низкое</item><item>Низкое</item><item>Баланс</item><item>Среднее (максимум Android)</item></string-array>
+    <string-array name="gfx_preload_entries"><item>Низкая / 1 поток</item><item>Баланс</item><item>Высокая / 2 потока</item></string-array>
+    <string-array name="gfx_water_entries"><item>Низкое — 256, без преломления</item><item>Баланс — 256</item><item>Высокое — 512</item></string-array>
+    <string-array name="gfx_shadow_entries"><item>Выключены</item><item>Игрок + персонажи</item><item>Игрок + персонажи + объекты</item></string-array>
+    <string-array name="gfx_shadow_map_entries"><item>512</item><item>1024 (максимум Android)</item></string-array>
+    <string-array name="gfx_grass_entries"><item>Выключена</item><item>Низко</item><item>Баланс</item><item>Высоко</item></string-array>
+    <string-array name="gfx_shader_entries"><item>Совместимость (рекомендуется)</item><item>Обычные normal/spec карты</item></string-array>
 
 </resources>

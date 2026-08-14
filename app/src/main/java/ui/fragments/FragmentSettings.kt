@@ -37,12 +37,11 @@ import androidx.core.content.ContextCompat
 import com.codekidlabs.storagechooser.StorageChooser
 import com.libopenmw.openmw.R
 import file.GameInstaller
-import file.GraphicsPresets
-import ui.dialogs.GraphicsSettingsDialog
 
 import ui.activity.ConfigureControls
 import ui.activity.MainActivity
 import ui.activity.ModsActivity
+import ui.activity.GraphicsSettingsActivity
 import utils.MyApp
 import java.util.*
 
@@ -53,7 +52,6 @@ class FragmentSettings : PreferenceFragment(), OnSharedPreferenceChangeListener 
 
         addPreferencesFromResource(R.xml.settings)
         preferenceScreen.sharedPreferences.registerOnSharedPreferenceChangeListener(this)
-        GraphicsPresets.ensureAutoInitialized(activity, preferenceScreen.sharedPreferences)
 
         updateGammaState()
 
@@ -69,8 +67,9 @@ class FragmentSettings : PreferenceFragment(), OnSharedPreferenceChangeListener 
             true
         }
 
-        findPreference("pref_graphics_dialog").setOnPreferenceClickListener {
-            GraphicsSettingsDialog.show(activity, preferenceScreen.sharedPreferences)
+        findPreference("pref_graphics_settings").setOnPreferenceClickListener {
+            val intent = Intent(activity, GraphicsSettingsActivity::class.java)
+            this.startActivity(intent)
             true
         }
 
@@ -163,8 +162,6 @@ class FragmentSettings : PreferenceFragment(), OnSharedPreferenceChangeListener 
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String) {
         updatePreference(findPreference(key), key)
-        if (key.startsWith("pref_graphics_"))
-            updatePreference(findPreference("pref_graphics_dialog"), "pref_graphics_dialog")
         updateGammaState()
     }
 
@@ -182,32 +179,6 @@ class FragmentSettings : PreferenceFragment(), OnSharedPreferenceChangeListener 
         // Show selected value as a summary for game_files
         if (key == "game_files") {
             preference.summary = preference.sharedPreferences.getString("game_files", "")
-        }
-        if (key == "pref_graphics_dialog") {
-            val master = preference.sharedPreferences.getString(GraphicsPresets.MASTER_KEY, "auto") ?: "auto"
-            val autoLevel = preference.sharedPreferences.getString(GraphicsPresets.AUTO_LEVEL_KEY, "medium") ?: "medium"
-            preference.summary = if (master == "auto")
-                MyApp.app.getString(R.string.pref_graphics_button_summary_auto).format(graphicsLevelLabel(autoLevel))
-            else
-                MyApp.app.getString(R.string.pref_graphics_button_summary).format(graphicsMasterLabel(master))
-        }
-    }
-
-
-    private fun graphicsLevelLabel(level: String): String {
-        return when (GraphicsPresets.normalizeLevel(level)) {
-            "low" -> MyApp.app.getString(R.string.pref_graphics_level_low)
-            "high" -> MyApp.app.getString(R.string.pref_graphics_level_high)
-            "ultra" -> MyApp.app.getString(R.string.pref_graphics_level_ultra)
-            else -> MyApp.app.getString(R.string.pref_graphics_level_medium)
-        }
-    }
-
-    private fun graphicsMasterLabel(master: String): String {
-        return when (master) {
-            "low", "medium", "high", "ultra" -> graphicsLevelLabel(master)
-            "custom" -> MyApp.app.getString(R.string.pref_graphics_level_custom)
-            else -> MyApp.app.getString(R.string.pref_graphics_level_auto)
         }
     }
 

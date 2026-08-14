@@ -66,7 +66,7 @@ class GameInstaller(path: String) {
      * Returns path to the Data Files directory as a string
      */
     fun findDataFiles(): String {
-        return File(dir, DATA_NAME).absolutePath
+        return (findCaseInsensitive(DATA_NAME) ?: File(dir, DATA_NAME)).absolutePath
     }
 
     /**

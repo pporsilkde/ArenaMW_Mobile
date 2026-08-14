@@ -1,21 +1,3 @@
-# ArenaMW Mobile AMW3 V16
-
-**Текущая активная схема:** AMW(3) + build-time engine patch + build-time Android-builder patch. См. `AMW3_PATCH_PIPELINE_V16_RU.md`. Старые V1–V15 документы оставлены только как история.
-
-# V15.3 MOC cache/pre-configure fix
-
-V15.3 переносит AMW2 build-time patch series из ненадёжного ExternalProject `PATCH_COMMAND` в обязательный pre-configure command. Это гарантирует установку совместимого `sse2neon v1.6.0` до сборки MaskedOcclusionCulling на NDK r21e даже после восстановления incremental cache. Подробности: `V15_3_MOC_PRECONFIGURE_FIX_RU.md`.
-
-
-## V15.2 MOC / NDK r21e
-
-MaskedOcclusionCulling on Android ARM64 is enabled again. The build-time pipeline pins sse2neon v1.6.0 for the legacy r21e/Clang 9 MOC translation path; no pre-patched AMW source is stored. See `V15_2_MOC_R21E_RU.md`.
-
-
-## AMW2 Android patch pipeline V15
-
-For the current `AMW(2)` base, engine compatibility changes are applied at build time through `patches/openmw/apply-series.sh`. See `AMW2_PATCH_PIPELINE_V15_RU.md` for the active AMW2-native patch series, Android graphics profiles, shadow caps (1024 / 8192), and the NDK r21e MOC strategy.
-
 # ArenaMW Android — Complex Water V3
 
 Текущая тестовая ветка: сложная PBR-вода адаптирована для Android GLES/NG-GL4ES. См. `COMPLEX_WATER_V3_RU.md`.
@@ -26,7 +8,7 @@ This is a minimal single-player adaptation of the original working `Android_Aren
 
 ## Changes from Android_ArenaMP_NG
 
-- Engine source: `https://github.com/MrZer0x0/ArenaMW.git` (`main` by default).
+- Engine source: `https://github.com/pporsilkde/AMW.git` (`main` by default).
 - Native target: `openmw` -> `libopenmw.so`.
 - RakNet ExternalProject removed completely.
 - No TES3MP client/server/master/browser CMake targets or network libraries.
@@ -69,11 +51,6 @@ HDR, Bloom, SSR и SMAA доступны как opt-in эффекты. Они в
 
 Последняя Android-правка: fail-safe FBO compositor для Bloom/SSR/SMAA/HDR и restart-safe переключение PBR quality. Подробности: `POSTFX_PBR_SAFE_V11_RU.md`.
 
-## ArenaMW Android V12 stable profile
+## ArenaMW Android V13 / AMW current base
 
-V12 removes the unstable HDR/Bloom/SSR/SMAA Android patch chain, fixes the mobile settings UI in both layout and C++/HPP logic, caps terrain detail at Medium, adds launcher shadow controls, preserves mod enable/order state, and uses the OpenMW launcher icon. See `STABLE_ANDROID_UI_MODS_V12_RU.md`.
-
-
-## V16.1 checkout hotfix
-
-V16.2 follows the live `pporsilkde/AMW:main` branch instead of a pinned commit. ArenaMW uses a shallow branch clone again, while GitHub Actions resolves the current remote HEAD on every run and resets/reapplies the build-time patch series only when that HEAD or the patch fingerprint changes. Gameplay/render patches are unchanged from V16.
+The Android builder is tested against `pporsilkde/AMW` commit `58593129ea34fb277e1adf32422ca907a91c85e2` and pins that commit by default for reproducible patch application. V13 rebases complex-water on the current `water.cpp`, hides the broken Effects/Advanced pages, removes visible PBR quality and SMAA threshold controls, hard-disables native fog/god rays/first-person depth bridge, adds a dedicated mobile graphics window, portable `build.ini`, and safer OSG/ng-gl4es streaming defaults. See `AMW_ANDROID_V13_NOTES_RU.txt`.

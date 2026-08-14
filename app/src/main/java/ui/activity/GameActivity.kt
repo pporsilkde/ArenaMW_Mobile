@@ -101,21 +101,14 @@ class GameActivity : SDLActivity() {
             Os.setenv("OSG_COP_VALUE", "0x00000100", true)
             Os.setenv("OSG_NOTIFY_LEVEL", "WARN", true)
 
-            // ── OSG profile from the AMW2-native graphics dialog ──────────────
-            // MainActivity writes the same profile into settings.cfg before launch,
-            // but the process-level OSG worker variables must be set here as well,
-            // immediately before libopenmw is loaded.
-            GraphicsPresets.ensureAutoInitialized(this, prefs!!)
-            val osgLevel = GraphicsPresets.normalizeLevel(
-                prefs!!.getString(GraphicsPresets.OSG_KEY, "medium")
-            )
-            val osgProfile = GraphicsPresets.osg(osgLevel)
-            Os.setenv("OSG_MAX_PAGEDLOD", osgProfile.maxPagedLod.toString(), true)
-            Os.setenv("OSG_THREADING", osgProfile.threading, true)
-            Os.setenv("OSG_NUM_DATABASE_THREADS", osgProfile.databaseThreads.toString(), true)
-            Os.setenv("OSG_NUM_COMPILE_THREADS", osgProfile.compileThreads.toString(), true)
-            Os.setenv("OSG_DATABASE_PAGER_THREADS", osgProfile.pagerThreads.toString(), true)
-            Os.setenv("OSG_SHADER_CACHE_ENABLED", if (osgProfile.shaderCache) "1" else "0", true)
+            // ── OSG Threading из preset ───────────────────────────────────────
+            val preset = GraphicsPresets.resolve(prefs!!)
+            Os.setenv("OSG_MAX_PAGEDLOD", preset.maxPagedLOD.toString(), true)
+            Os.setenv("OSG_THREADING", preset.osgThreading, true)
+            Os.setenv("OSG_NUM_DATABASE_THREADS", preset.dbThreads.toString(), true)
+            Os.setenv("OSG_NUM_COMPILE_THREADS", preset.compileThreads.toString(), true)
+            Os.setenv("OSG_DATABASE_PAGER_THREADS", preset.pagerThreads.toString(), true)
+            Os.setenv("OSG_SHADER_CACHE_ENABLED", if (preset.shaderCache) "1" else "0", true)
 
             // ── NG-GL4ES специфичные переменные ──────────────────────────────
             // Keep the known-working simple converter for the general ArenaMW 0.47 renderer.
@@ -128,20 +121,15 @@ class GameActivity : SDLActivity() {
             Os.setenv("LIBGL_DXTMIPMAP", "1", true)
             // Текстуры
             Os.setenv("LIBGL_AVOID16BITS", "1", true)
-            // Лог только в debug
-            // Keep Android graphics diagnostics enabled even in release CI builds until
-            // the GLES shader path is stable. This avoids another "empty log" crash.
-            Os.setenv("LIBGL_LOG", "1", true)
-            // Keep shader compiler/linker failures visible without dumping every converted shader.
+            // Avoid per-frame GL4ES diagnostic overhead in normal play while
+            // preserving shader compile/link errors. DEBUG/VERBOSE can re-enable it.
+            val debugLevel = prefs!!.getString("pref_debug_level", "WARNING") ?: "WARNING"
+            Os.setenv("LIBGL_LOG", if (debugLevel == "DEBUG" || debugLevel == "VERBOSE") "1" else "0", true)
             Os.setenv("LIBGL_LOGSHADERERROR", "1", true)
             Os.setenv("OPENMW_DISABLE_LOGS", "0", true)
 
-            // Do not bind texture downscaling to the OSG selector. In the old
-            // launcher the battery preset silently enabled LIBGL_SHRINK=6; with
-            // independent AMW2 categories that would make changing only OSG
-            // unexpectedly destroy texture quality. Keep native texture size by
-            // default; an explicit envLine override can still change it later.
-            Os.setenv("LIBGL_SHRINK", "0", true)
+            // Deliberately do not use LIBGL_SHRINK. Runtime texture shrinking adds
+            // conversion work and is not a safe camera-stutter optimization.
 
         } catch (e: ErrnoException) {
             Log.e("OpenMW", "Failed setting NG-GL4ES environment variables.")

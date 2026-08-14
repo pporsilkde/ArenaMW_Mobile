@@ -62,7 +62,7 @@ project(arenamw-android)
 # ArenaMW source can be overridden from the command line, for example:
 #   cmake ... -DARENAMW_REPOSITORY=/absolute/path/to/ArenaMW -DARENAMW_GIT_TAG=main
 set(ARENAMW_REPOSITORY "https://github.com/pporsilkde/AMW.git" CACHE STRING "ArenaMW Git repository or local source path")
-set(ARENAMW_GIT_TAG "main" CACHE STRING "ArenaMW branch, tag or commit")
+set(ARENAMW_GIT_TAG "58593129ea34fb277e1adf32422ca907a91c85e2" CACHE STRING "ArenaMW branch, tag or commit")
 
 include(ExternalProject)
 
@@ -497,9 +497,22 @@ set(OPENMW_COMMON
 )
 
 set(ARENAMW_PATCH
-    # AMW3-native V16 build-time patch pipeline. The source checkout stays clean in
-    # the repository; Android compatibility is applied only inside ExternalProject.
-    bash ${CMAKE_SOURCE_DIR}/patches/openmw/apply-series.sh <SOURCE_DIR>
+	# Keep only the Android compatibility patches used by the original builder.
+	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/01-loadingscreen-disable-for-now.patch &&
+	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/02-windowmanagerimp-always-show-mouse-when-possible-pat.patch &&
+	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/03-android-fix-context-being-lost-on-app-minimize.patch &&
+	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/04-settingswindow-save-user-settings-file-when-ok-is-pr.patch &&
+	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/05-components-misc-stringops-use-boost-format-instead-o.patch &&
+	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/06-android-safe-render-v1.patch &&
+	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/07-android-complex-water-v3.patch &&
+	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/08-android-gles-shader-compat-v4.patch &&
+	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/09-android-complex-water-gles-compat-v5.patch &&
+	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/10-android-complex-water-geometry-shadows-v6.patch &&
+	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/11-android-gles-shadow-matrix-v7.patch &&
+	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/12-android-mobile-tuning-v8.patch &&
+	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/16-android-mobile-settings-ui-v13.patch &&
+	cp ${CMAKE_SOURCE_DIR}/patches/openmw/android_main.cpp <SOURCE_DIR>/apps/openmw/android_main.cpp &&
+	sh ${CMAKE_SOURCE_DIR}/patches/openmw/patch-sse2neon.sh <SOURCE_DIR>
 )
 
 # Original Android dependency stack, reduced to the single-player requirements.
@@ -518,15 +531,9 @@ ExternalProject_Add(arenamw
 	UPDATE_DISCONNECTED TRUE
 	DOWNLOAD_DIR ${download_dir}
 
-	# Do not rely on ExternalProject's patch stamp for the cached ArenaMW checkout.
-	# CMake may legitimately skip PATCH_COMMAND after a cache restore/source update.
-	# Apply the complete AMW3 V16 Android patch immediately before every configure that
-	# ExternalProject decides is necessary. apply-series.sh resets the checkout to
-	# HEAD first, so this is deterministic and safe on both fresh and cached trees.
-	PATCH_COMMAND ""
+	PATCH_COMMAND ${ARENAMW_PATCH}
 
-	CONFIGURE_COMMAND ${ARENAMW_PATCH}
-	COMMAND ${wrapper_command} cmake <SOURCE_DIR>
+	CONFIGURE_COMMAND ${wrapper_command} cmake <SOURCE_DIR>
 	${COMMON_CMAKE_ARGS}
 	${OPENMW_COMMON}
 

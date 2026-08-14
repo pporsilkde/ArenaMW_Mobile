@@ -62,7 +62,7 @@ project(arenamw-android)
 # ArenaMW source can be overridden from the command line, for example:
 #   cmake ... -DARENAMW_REPOSITORY=/absolute/path/to/ArenaMW -DARENAMW_GIT_TAG=main
 set(ARENAMW_REPOSITORY "https://github.com/pporsilkde/AMW.git" CACHE STRING "ArenaMW Git repository or local source path")
-set(ARENAMW_GIT_TAG "main" CACHE STRING "ArenaMW branch, tag or commit")
+set(ARENAMW_GIT_TAG "58593129ea34fb277e1adf32422ca907a91c85e2" CACHE STRING "ArenaMW branch, tag or commit")
 
 include(ExternalProject)
 
@@ -341,11 +341,14 @@ ExternalProject_Add(NG-GL4ES
 
 	BUILD_COMMAND ${wrapper_command} $(MAKE)
 
-	INSTALL_COMMAND mkdir -p ${prefix}/lib/
+	# Do not rely on another dependency/cache having created prefix/include.
+	# Copy the *contents* of NG-GL4ES/include so an existing gl4es directory
+	# cannot accidentally produce prefix/include/gl4es/include/... .
+	INSTALL_COMMAND mkdir -p ${prefix}/lib/ ${prefix}/include/gl4es/
 	COMMAND cp libng_gl4es.so ${prefix}/lib/
 	COMMAND cp <SOURCE_DIR>/libraries/${app_abi}/libspirv-cross-c-shared.so ${prefix}/lib/
-	COMMAND cp -r <SOURCE_DIR>/include ${prefix}/include/gl4es/
-	COMMAND cp -r <SOURCE_DIR>/include ${prefix}/
+	COMMAND cp -r <SOURCE_DIR>/include/. ${prefix}/include/gl4es/
+	COMMAND cp -r <SOURCE_DIR>/include/. ${prefix}/include/
 )
 
 # Alias so existing targets depending on "gl4es" still resolve
@@ -494,9 +497,22 @@ set(OPENMW_COMMON
 )
 
 set(ARENAMW_PATCH
-    # AMW2-native build-time patch pipeline. The source checkout stays clean in
-    # the repository; Android compatibility is applied only inside ExternalProject.
-    bash ${CMAKE_SOURCE_DIR}/patches/openmw/apply-series.sh <SOURCE_DIR>
+	# Keep only the Android compatibility patches used by the original builder.
+	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/01-loadingscreen-disable-for-now.patch &&
+	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/02-windowmanagerimp-always-show-mouse-when-possible-pat.patch &&
+	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/03-android-fix-context-being-lost-on-app-minimize.patch &&
+	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/04-settingswindow-save-user-settings-file-when-ok-is-pr.patch &&
+	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/05-components-misc-stringops-use-boost-format-instead-o.patch &&
+	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/06-android-safe-render-v1.patch &&
+	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/07-android-complex-water-v3.patch &&
+	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/08-android-gles-shader-compat-v4.patch &&
+	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/09-android-complex-water-gles-compat-v5.patch &&
+	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/10-android-complex-water-geometry-shadows-v6.patch &&
+	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/11-android-gles-shadow-matrix-v7.patch &&
+	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/12-android-mobile-tuning-v8.patch &&
+	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/16-android-mobile-settings-ui-v13.patch &&
+	cp ${CMAKE_SOURCE_DIR}/patches/openmw/android_main.cpp <SOURCE_DIR>/apps/openmw/android_main.cpp &&
+	sh ${CMAKE_SOURCE_DIR}/patches/openmw/patch-sse2neon.sh <SOURCE_DIR>
 )
 
 # Original Android dependency stack, reduced to the single-player requirements.
@@ -520,6 +536,11 @@ ExternalProject_Add(arenamw
 	CONFIGURE_COMMAND ${wrapper_command} cmake <SOURCE_DIR>
 	${COMMON_CMAKE_ARGS}
 	${OPENMW_COMMON}
+
+	# Always invoke the nested ArenaMW build. The cached CMake/Make build tree
+	# then decides which translation units are actually out of date, so unchanged
+	# sources are not recompiled on subsequent CI runs.
+	BUILD_ALWAYS TRUE
 
 	# Single-player ArenaMW Android library only.
 	BUILD_COMMAND ${wrapper_command} ${CMAKE_COMMAND} --build <BINARY_DIR> --target openmw --parallel ${BUILD_JOBS}

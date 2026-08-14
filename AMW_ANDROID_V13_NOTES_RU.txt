@@ -1,0 +1,14 @@
+ArenaMW Android V13 / AMW 58593129ea34fb277e1adf32422ca907a91c85e2
+
+- Источник: https://github.com/pporsilkde/AMW.git
+- По умолчанию builder закреплён на проверенном commit 58593129ea34fb277e1adf32422ca907a91c85e2.
+  Для другого commit/tag можно передать ARENAMW_GIT_TAG вручную, но патчи нужно перепроверять.
+- Patch 07 complex water перебазирован под текущий water.cpp.
+- Patch 16 заменён на V13 и проверен цепочкой после 01-12.
+- Внутриигровые Effects и Advanced скрыты; PBR quality и SMAA threshold удалены из видимых настроек.
+- atmospheric fog, god rays и first-person world-depth bridge принудительно выключены.
+- Тени: максимум 1024; дистанция: максимум 8192.
+- В лаунчере отдельное окно Графика: общий пресет, дистанция, ландшафт, preload, вода, тени, трава, шейдеры.
+- Very Low основан на переданном defaults(2).base64.
+- OSG streaming workers уменьшены; shader cache остаётся включён; LIBGL_SHRINK не используется.
+- build.ini переносится в Android: существующий manifest импортируется в Mods, изменения Mods записываются обратно, запуск строит openmw.cfg из build.ini.

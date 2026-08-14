@@ -202,7 +202,7 @@ cmake ../.. \
 	-DFFMPEG_CPU=$FFMPEG_CPU \
 	-DBUILD_JOBS="$NCPU" \
 	-DARENAMW_REPOSITORY="${ARENAMW_REPOSITORY:-https://github.com/pporsilkde/AMW.git}" \
-	-DARENAMW_GIT_TAG="${ARENAMW_GIT_TAG:-main}"
+	-DARENAMW_GIT_TAG="${ARENAMW_GIT_TAG:-58593129ea34fb277e1adf32422ca907a91c85e2}"
 
 # Native dependency caches are restored by CI. ArenaMW has no master/server target.
 

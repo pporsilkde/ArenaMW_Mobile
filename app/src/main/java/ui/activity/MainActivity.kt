@@ -46,6 +46,7 @@ import com.libopenmw.openmw.R
 import constants.Constants
 import file.GameInstaller
 import file.GraphicsPresets
+import file.BuildManifest
 import file.UpdateDownloader
 import android.widget.ImageButton
 
@@ -216,6 +217,9 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
+        // build.ini is authoritative when present, just like desktop ArenaMW.
+        BuildManifest.applyToDatabase(this)
+
         // Second, check if user has at least one mod enabled
         val plugins = ModsCollection(ModType.Plugin, inst.findDataFiles(),
             ModsDatabaseOpenHelper.getInstance(this))
@@ -302,36 +306,15 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        val dataFiles = GameInstaller.getDataFiles(this)
-        val db = ModsDatabaseOpenHelper.getInstance(this)
-        val resources = ModsCollection(ModType.Resource, dataFiles, db)
-        val plugins = ModsCollection(ModType.Plugin, dataFiles, db)
-        val groundcovers = ModsCollection(ModType.Groundcover, dataFiles, db)
+        // Portable build.ini is the launcher source of truth. If it does not
+        // exist yet, create it from the current Mods database once.
+        val manifest = BuildManifest.ensure(this)
 
         try {
-            // generate final output.cfg
             var output = base + "\n" + fallback + "\n"
-
-            // output resources
-            // The mod database is authoritative. Do not re-sort or re-enable
-            // entries during launch: what the user configured in the Mods screen
-            // is exactly what is written to openmw.cfg.
-            resources.mods
-                .filter { it.enabled }
-                .sortedBy { it.order }
-                .forEach { output += "fallback-archive=${it.filename}\n" }
-
-            // output plugins in the user's persisted load order
-            plugins.mods
-                .filter { it.enabled }
-                .sortedBy { it.order }
-                .forEach { output += "content=${it.filename}\n" }
-
-            // output groundcover
-            groundcovers.mods
-                .filter { it.enabled }
-                .sortedBy { it.order }
-                .forEach { output += "groundcover=${it.filename}\n" }
+            manifest.archives.forEach { output += "fallback-archive=$it\n" }
+            manifest.content.forEach { output += "content=$it\n" }
+            manifest.groundcover.forEach { output += "groundcover=$it\n" }
 
             // write everything to openmw.cfg
             File(Constants.OPENMW_CFG).writeText(output)
@@ -645,117 +628,10 @@ class MainActivity : AppCompatActivity() {
                 }
 
 
-                // --- AMW2 mobile graphics/performance profiles V15 ---
-                // The Android launcher is the source of profile selection. Engine-side
-                // clamps still enforce shadow map <= 1024 and shadow distance <= 8192.
-                GraphicsPresets.ensureAutoInitialized(this@MainActivity, prefs)
-                val androidSettings = Constants.USER_CONFIG + "/settings.cfg"
-
-                // Stable GLES baseline. Category profiles below are allowed to tune
-                // quality, but never switch away from the tested shader-water/GLES path.
-                file.Writer.write(androidSettings, "Shaders", "force shaders", "true")
-                file.Writer.write(androidSettings, "Shaders", "lighting method", "shaders compatibility")
-                file.Writer.write(androidSettings, "Shaders", "antialias alpha test", "false")
-                file.Writer.write(androidSettings, "Camera", "occlusion culling", "false")
-                file.Writer.write(androidSettings, "Water", "shader mode", "new")
-                file.Writer.write(androidSettings, "Water", "shader", "true")
-                file.Writer.write(androidSettings, "Water", "refraction", "true")
-                file.Writer.write(androidSettings, "Water", "shader water ripples", "true")
-
-                // Native post effects in this AMW2 branch still use a framebuffer-copy
-                // path on Android. Keep them off by default until the mobile RTT path is
-                // promoted separately; graphics profiles therefore cannot re-enable them.
-                file.Writer.write(androidSettings, "Shaders", "hdr lighting", "false")
-                file.Writer.write(androidSettings, "Shaders", "bloom enabled", "false")
-                file.Writer.write(androidSettings, "Shaders", "native ssr enabled", "false")
-                file.Writer.write(androidSettings, "Shaders", "smaa enabled", "false")
-
-                // One-time migration only for non-profile internals.
-                val mobileDefaultsV15 = "arenamw_android_mobile_defaults_v15"
-                if (!prefs.getBoolean(mobileDefaultsV15, false)) {
-                    file.Writer.write(androidSettings, "Water", "wave strength", "0.34")
-                    file.Writer.write(androidSettings, "Shadows", "number of shadow maps", "1")
-                    file.Writer.write(androidSettings, "Shadows", "allow shadow map overlap", "false")
-                    file.Writer.write(androidSettings, "Shadows", "enable indoor shadows", "false")
-                    file.Writer.write(androidSettings, "Shadows", "enhanced filtering", "true")
-                    prefs.edit().putBoolean(mobileDefaultsV15, true).apply()
-                }
-
-                val osgLevel = GraphicsPresets.normalizeLevel(prefs.getString(GraphicsPresets.OSG_KEY, "medium"))
-                val streamingLevel = GraphicsPresets.normalizeLevel(prefs.getString(GraphicsPresets.STREAMING_KEY, "medium"))
-                val terrainLevel = GraphicsPresets.normalizeLevel(prefs.getString(GraphicsPresets.TERRAIN_KEY, "medium"))
-                val shaderLevel = GraphicsPresets.normalizeLevel(prefs.getString(GraphicsPresets.SHADERS_KEY, "medium"))
-                val lightingLevel = GraphicsPresets.normalizeLevel(prefs.getString(GraphicsPresets.LIGHTING_KEY, "medium"))
-                val shadowLevel = GraphicsPresets.normalizeLevel(prefs.getString(GraphicsPresets.SHADOWS_KEY, "medium"))
-                val grassLevel = GraphicsPresets.normalizeLevel(prefs.getString(GraphicsPresets.GRASS_KEY, "medium"))
-
-                val osgProfile = GraphicsPresets.osg(osgLevel)
-                file.Writer.write(androidSettings, "OSG", "threading model", osgProfile.threading)
-                try { Os.setenv("OSG_THREADING", osgProfile.threading, true) } catch (_: Exception) {}
-                try { Os.setenv("OSG_DATABASE_PAGER_THREADS", osgProfile.pagerThreads.toString(), true) } catch (_: Exception) {}
-                try { Os.setenv("OSG_NUM_DATABASE_THREADS", osgProfile.databaseThreads.toString(), true) } catch (_: Exception) {}
-                try { Os.setenv("OSG_NUM_COMPILE_THREADS", osgProfile.compileThreads.toString(), true) } catch (_: Exception) {}
-                try { Os.setenv("OSG_MAX_PAGEDLOD", osgProfile.maxPagedLod.toString(), true) } catch (_: Exception) {}
-                try { Os.setenv("OSG_SHADER_CACHE_ENABLED", if (osgProfile.shaderCache) "1" else "0", true) } catch (_: Exception) {}
-
-                val streamingProfile = GraphicsPresets.streaming(streamingLevel)
-                file.Writer.write(androidSettings, "Camera", "viewing distance", streamingProfile.viewingDistance.toString())
-                file.Writer.write(androidSettings, "Cells", "preload enabled", "true")
-                file.Writer.write(androidSettings, "Cells", "preload num threads", streamingProfile.preloadThreads.toString())
-                file.Writer.write(androidSettings, "Cells", "preload distance", streamingProfile.preloadDistance.toString())
-                file.Writer.write(androidSettings, "Cells", "preload exterior grid", "true")
-                file.Writer.write(androidSettings, "Cells", "preload instances", "true")
-                file.Writer.write(androidSettings, "Cells", "preload cell cache max", streamingProfile.preloadCacheMax.toString())
-                file.Writer.write(androidSettings, "Cells", "preload cell expiry delay", streamingProfile.cacheExpiry.toString())
-                file.Writer.write(androidSettings, "Cells", "cache expiry delay", streamingProfile.cacheExpiry.toString())
-                file.Writer.write(androidSettings, "Cells", "target framerate", streamingProfile.targetFramerate.toString())
-                file.Writer.write(androidSettings, "Physics", "async num threads", streamingProfile.asyncPhysicsThreads.toString())
-
-                val terrainProfile = GraphicsPresets.terrain(terrainLevel)
-                file.Writer.write(androidSettings, "Terrain", "distant terrain", if (terrainProfile.distantTerrain) "true" else "false")
-                file.Writer.write(androidSettings, "Terrain", "lod factor", terrainProfile.lodFactor.toString())
-                file.Writer.write(androidSettings, "Terrain", "vertex lod mod", terrainProfile.vertexLodMod.toString())
-                file.Writer.write(androidSettings, "Terrain", "composite map level", terrainProfile.compositeMapLevel.toString())
-                file.Writer.write(androidSettings, "Terrain", "composite map resolution", terrainProfile.compositeMapResolution.toString())
-                file.Writer.write(androidSettings, "Terrain", "max composite geometry size", terrainProfile.maxCompositeGeometrySize.toString())
-                file.Writer.write(androidSettings, "Terrain", "object paging", if (terrainProfile.objectPaging) "true" else "false")
-                file.Writer.write(androidSettings, "Terrain", "object paging merge factor", terrainProfile.objectPagingMergeFactor.toString())
-                file.Writer.write(androidSettings, "Terrain", "object paging min size", terrainProfile.objectPagingMinSize.toString())
-
-                val shaderProfile = GraphicsPresets.shaders(shaderLevel)
-                file.Writer.write(androidSettings, "Shaders", "material quality", shaderProfile.materialQuality)
-                file.Writer.write(androidSettings, "Shaders", "enhanced pbr lighting", if (shaderProfile.enhancedPbrLighting) "true" else "false")
-                file.Writer.write(androidSettings, "Shaders", "auto use object normal maps", if (shaderProfile.autoUsePbrMaps) "true" else "false")
-                file.Writer.write(androidSettings, "Shaders", "auto use object specular maps", if (shaderProfile.autoUsePbrMaps) "true" else "false")
-                file.Writer.write(androidSettings, "Shaders", "auto use terrain normal maps", if (shaderProfile.autoUsePbrMaps) "true" else "false")
-                file.Writer.write(androidSettings, "Shaders", "auto use terrain specular maps", if (shaderProfile.autoUsePbrMaps) "true" else "false")
-                file.Writer.write(androidSettings, "Water", "reflection detail", shaderProfile.waterReflectionDetail.toString())
-                file.Writer.write(androidSettings, "Water", "rtt size", shaderProfile.waterRttSize.toString())
-
-                val lightingProfile = GraphicsPresets.lighting(lightingLevel)
-                file.Writer.write(androidSettings, "Shaders", "force per pixel lighting", if (lightingProfile.forcePerPixel) "true" else "false")
-                file.Writer.write(androidSettings, "Shaders", "max lights", lightingProfile.maxLights.toString())
-                file.Writer.write(androidSettings, "Shaders", "radial fog", if (lightingProfile.radialFog) "true" else "false")
-                file.Writer.write(androidSettings, "Shaders", "clamp lighting", if (lightingProfile.clampLighting) "true" else "false")
-
-                val shadowProfile = GraphicsPresets.shadows(shadowLevel)
-                val safeShadowResolution = shadowProfile.resolution.coerceIn(256, 1024)
-                val safeShadowDistance = shadowProfile.distance.coerceIn(0, 8192)
-                file.Writer.write(androidSettings, "Shadows", "enable shadows", if (shadowProfile.enabled) "true" else "false")
-                file.Writer.write(androidSettings, "Shadows", "player shadows", if (shadowProfile.enabled) "true" else "false")
-                file.Writer.write(androidSettings, "Shadows", "actor shadows", if (shadowProfile.enabled && shadowProfile.actors) "true" else "false")
-                file.Writer.write(androidSettings, "Shadows", "object shadows", if (shadowProfile.enabled && shadowProfile.objects) "true" else "false")
-                file.Writer.write(androidSettings, "Shadows", "terrain shadows", if (shadowProfile.enabled && shadowProfile.terrain) "true" else "false")
-                file.Writer.write(androidSettings, "Shadows", "enable indoor shadows", "false")
-                file.Writer.write(androidSettings, "Shadows", "shadow map resolution", safeShadowResolution.toString())
-                file.Writer.write(androidSettings, "Shadows", "maximum shadow map distance", safeShadowDistance.toString())
-                file.Writer.write(androidSettings, "Shadows", "shadow fade start", shadowProfile.fadeStart.toString())
-
-                val grassProfile = GraphicsPresets.grass(grassLevel)
-                file.Writer.write(androidSettings, "Groundcover", "enabled", if (grassProfile.enabled) "true" else "false")
-                file.Writer.write(androidSettings, "Groundcover", "density", grassProfile.density.toString())
-                file.Writer.write(androidSettings, "Groundcover", "rendering distance", grassProfile.distance.toString())
-                file.Writer.write(androidSettings, "Groundcover", "min chunk size", grassProfile.minChunkSize.toString())
+                // Launcher graphics window is authoritative for the Android
+                // mobile profile. Apply it last so legacy/hidden preferences cannot
+                // silently overwrite the values the user selected.
+                GraphicsPresets.applyToSettings(prefs)
 
                 configureDefaultsBin(mapOf(
 
