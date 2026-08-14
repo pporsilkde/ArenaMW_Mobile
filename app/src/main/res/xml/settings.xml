@@ -3,6 +3,10 @@
 	<PreferenceCategory android:title="@string/general_settings" android:key="general_settings">
 		<Preference android:title="@string/game_files" android:key="game_files" />
 		<Preference android:title="@string/mods" android:key="pref_mods" />
+        <Preference
+            android:key="pref_graphics_settings"
+            android:title="@string/pref_graphics_settings_title"
+            android:summary="@string/pref_graphics_settings_summary" />
 	</PreferenceCategory>
 	<PreferenceCategory android:title="@string/pref_ui">
 		<ListPreference android:entries="@array/pref_encoding_entries" android:title="@string/pref_encoding" android:key="pref_encoding" android:summary="%s" android:defaultValue="@string/pref_encoding_default" android:dialogTitle="@string/pref_encoding" android:entryValues="@array/pref_encoding_values" />
@@ -15,12 +19,6 @@
 	</PreferenceCategory>
 	<PreferenceCategory android:title="@string/pref_menu_gui">
 		<EditTextPreference android:textStyle="bold" android:hint="1.5" android:title="@string/pref_uiScaling" android:key="pref_uiScaling" android:dialogTitle="@string/pref_uiScaling" android:inputType="numberDecimal" />
-	</PreferenceCategory>
-	<PreferenceCategory android:title="@string/pref_graphics_preset_category">
-        <Preference
-            android:key="pref_graphics_settings"
-            android:title="@string/pref_graphics_settings_title"
-            android:summary="@string/pref_graphics_settings_summary" />
 	</PreferenceCategory>
 	<PreferenceCategory android:title="@string/pref_advanced">
 		<ListPreference android:entries="@array/pref_debug_level_entries" android:title="@string/pref_debug_level" android:key="pref_debug_level" android:summary="%s" android:defaultValue="@string/pref_debug_level_default" android:dialogTitle="@string/pref_debug_level" android:entryValues="@array/pref_debug_level_values" />

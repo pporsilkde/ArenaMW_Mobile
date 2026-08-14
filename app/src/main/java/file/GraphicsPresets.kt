@@ -23,6 +23,7 @@ object GraphicsPresets {
         val preloadThreads: Int,
         val targetFramerate: Int,
         val frameLimit: Float,
+        val waterMode: String,
         val waterRtt: Int,
         val waterRefraction: Boolean,
         val waterReflectionDetail: Int,
@@ -42,31 +43,31 @@ object GraphicsPresets {
         "very_low" to Preset(
             "CullDrawThreadPerContext", 1, 1, 1, 4, true,
             4096, .40f, -3, -3, 512, true, true,
-            1000, 1, 60, 45.03f, 256, false, 2,
+            1000, 1, 60, 45.03f, "simple", 256, false, 2,
             "off", 1024, 8192, true, .80f, 7100, "compatibility"
         ),
         "performance" to Preset(
             "CullDrawThreadPerContext", 1, 1, 1, 4, true,
             4096, .50f, -2, -3, 1024, true, false,
-            1200, 1, 60, 45.0f, 256, false, 2,
+            1200, 1, 60, 45.0f, "simple", 256, false, 2,
             "off", 512, 4096, true, .65f, 5000, "compatibility"
         ),
         "balanced" to Preset(
             "CullDrawThreadPerContext", 1, 1, 1, 6, true,
             5120, .65f, -1, -2, 1024, true, true,
-            1600, 1, 60, 60.0f, 256, true, 2,
+            1600, 1, 60, 60.0f, "new", 256, true, 2,
             "characters", 512, 5120, true, .80f, 6000, "compatibility"
         ),
         "quality" to Preset(
             "CullDrawThreadPerContext", 2, 1, 1, 8, true,
             6144, .80f, -1, -2, 2048, true, true,
-            2000, 1, 60, 60.0f, 512, true, 3,
+            2000, 1, 60, 60.0f, "new", 512, true, 3,
             "objects", 1024, 6144, true, 1.0f, 7100, "standard"
         ),
         "battery" to Preset(
             "SingleThreaded", 1, 1, 1, 3, true,
             3072, .40f, -3, -3, 512, false, false,
-            800, 1, 30, 30.0f, 256, false, 1,
+            800, 1, 30, 30.0f, "simple", 256, false, 1,
             "off", 512, 3072, false, .50f, 3500, "compatibility"
         )
     )
@@ -91,7 +92,10 @@ object GraphicsPresets {
         val preloadDistance = when (preload) { "low" -> 1000; "high" -> 2200; else -> 1600 }
         val preloadThreads = if (preload == "high") 2 else 1
         val water = prefs.getString("pref_gfx_water", "balanced") ?: "balanced"
-        val waterRtt = when (water) { "low" -> 256; "high" -> 512; else -> 256 }
+        // Low uses the legacy/simple ArenaMW shader. Balanced/High use PBR water.
+        // Keep the old low/balanced/high preference IDs for upgrade compatibility.
+        val waterMode = if (water == "low") "simple" else "new"
+        val waterRtt = when (water) { "high" -> 512; else -> 256 }
         val waterRefraction = water != "low"
         val waterReflection = when (water) { "low" -> 1; "high" -> 3; else -> 2 }
         val grass = prefs.getString("pref_gfx_grass", "balanced") ?: "balanced"
@@ -103,7 +107,7 @@ object GraphicsPresets {
             lodFactor = terrainValues[0], vertexLodMod = terrainValues[1].toInt(),
             compositeMapLevel = terrainValues[2].toInt(), compositeMapResolution = terrainValues[3].toInt(),
             preloadDistance = preloadDistance, preloadThreads = preloadThreads,
-            waterRtt = waterRtt, waterRefraction = waterRefraction, waterReflectionDetail = waterReflection,
+            waterMode = waterMode, waterRtt = waterRtt, waterRefraction = waterRefraction, waterReflectionDetail = waterReflection,
             shadowScope = prefs.getString("pref_gfx_shadows", "characters") ?: "characters",
             shadowResolution = ((prefs.getString("pref_gfx_shadow_map", "512") ?: "512").toIntOrNull() ?: 512).coerceIn(512, 1024),
             shadowDistance = ((prefs.getString("pref_gfx_shadow_distance", "5120") ?: "5120").toIntOrNull() ?: 5120).coerceIn(1024, 8192),
@@ -167,7 +171,10 @@ object GraphicsPresets {
         w("Shaders", "atmospheric fog enabled", "false")
         w("Shaders", "god rays enabled", "false")
 
-        w("Water", "shader", "true")
+        // Explicit mode prevents stale settings.cfg from forcing PBR water on low presets.
+        // "simple" = ArenaMW legacy/simple shader, "new" = current PBR water.
+        w("Water", "shader mode", p.waterMode)
+        w("Water", "shader", b(p.waterMode != "off"))
         w("Water", "rtt size", p.waterRtt)
         w("Water", "refraction", b(p.waterRefraction))
         w("Water", "shader water ripples", "true")

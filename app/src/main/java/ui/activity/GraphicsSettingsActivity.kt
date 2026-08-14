@@ -130,7 +130,7 @@ class GraphicsSettingsActivity : AppCompatActivity() {
         val terrainId = when { p.lodFactor <= .40f -> "very_low"; p.lodFactor <= .50f -> "low"; p.lodFactor >= .80f -> "medium"; else -> "balanced" }
         select(terrain, terrainValues, terrainId)
         select(preload, preloadValues, when { p.preloadDistance <= 1200 -> "low"; p.preloadDistance >= 2000 -> "high"; else -> "balanced" })
-        select(water, waterValues, when { !p.waterRefraction -> "low"; p.waterRtt >= 512 -> "high"; else -> "balanced" })
+        select(water, waterValues, when { p.waterMode == "simple" -> "low"; p.waterRtt >= 512 -> "high"; else -> "balanced" })
         select(shadows, shadowValues, p.shadowScope)
         select(shadowMap, shadowMapValues, p.shadowResolution.toString())
         select(shadowDistance, shadowDistanceValues, p.shadowDistance.toString())
