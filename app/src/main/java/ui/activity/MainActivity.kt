@@ -618,8 +618,6 @@ class MainActivity : AppCompatActivity() {
                 file.Writer.write(cfg, "Game", "uncapped damage fatigue", boolPref("pref_uncapped_damage_fatigue"))
                 file.Writer.write(cfg, "Game", "turn to movement direction", boolPref("pref_turn_to_movement_direction"))
                 file.Writer.write(cfg, "Game", "smooth movement", boolPref("pref_smooth_movement"))
-                file.Writer.write(cfg, "Game", "NPCs avoid collisions", boolPref("pref_NPCs_avoid_collisions"))
-                file.Writer.write(cfg, "Game", "NPCs give way", boolPref("pref_NPCs_give_way"))
                 file.Writer.write(cfg, "Game", "swim upward correction", boolPref("pref_swim_upward_correction"))
                 file.Writer.write(cfg, "Game", "trainers training skills based on base skill", boolPref("pref_trainers_training_skills_based_on_base_skill"))
                 file.Writer.write(cfg, "Game", "always allow stealing from knocked out actors", boolPref("pref_always_allow_stealing_from_knocked_out_actors"))
@@ -627,6 +625,13 @@ class MainActivity : AppCompatActivity() {
                 file.Writer.write(cfg, "Game", "allow actors to follow over water surface", boolPref("pref_allow_actors_to_follow_over_water_surface"))
                 }
 
+                // Preserve the stock OpenMW actor-collision behaviour on Android.
+                // These preferences are not exposed in the current launcher; older
+                // code accidentally treated the missing prefs as false and wrote
+                // that into settings.cfg, which lets NPCs overlap each other.
+                val settingsCfgPath = Constants.USER_CONFIG + "/settings.cfg"
+                file.Writer.write(settingsCfgPath, "Game", "NPCs avoid collisions", "true")
+                file.Writer.write(settingsCfgPath, "Game", "NPCs give way", "true")
 
                 // Launcher graphics window is authoritative for the Android
                 // mobile profile. Apply it last so legacy/hidden preferences cannot

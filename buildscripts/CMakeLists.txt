@@ -513,6 +513,7 @@ set(ARENAMW_PATCH
 	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/16-android-mobile-settings-ui-v13-2.patch &&
 	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/17-android-clean-ui-v13-3.patch &&
 	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/18-android-world-distance-land-v13-4.patch &&
+	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/19-android-ui-safety-controls-v13-5.patch &&
 	cp ${CMAKE_SOURCE_DIR}/patches/openmw/android_main.cpp <SOURCE_DIR>/apps/openmw/android_main.cpp &&
 	sh ${CMAKE_SOURCE_DIR}/patches/openmw/patch-sse2neon.sh <SOURCE_DIR>
 )

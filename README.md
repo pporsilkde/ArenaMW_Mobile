@@ -62,3 +62,10 @@ Because the builder follows `main`, a future upstream change may intentionally m
 - Launcher Graphics is placed directly below Mods.
 - Official OpenMW application/start icon is used.
 - Water mode is preset-aware: Very Low/Performance/Battery use `Water/shader mode = simple`; Balanced/Quality use `new` (PBR).
+
+## ArenaMW Android V13.5 notes
+- Restores stock OpenMW NPC collision-avoidance defaults (`NPCs avoid collisions=true`, `NPCs give way=true`) every launch so old Android prefs cannot leave actors overlapping.
+- Hides the in-game Shadows section; launcher presets still apply shadows before renderer startup.
+- Moves HUD FPS text to X=96 and moves the pause OSC button to the upper-left corner.
+- Replaces the old Y/save-chat OSC action with the Wait icon mapped to `T`.
+- Postprocess/PIC button sends `F11` only on a double tap; long hold still sends `F12`.

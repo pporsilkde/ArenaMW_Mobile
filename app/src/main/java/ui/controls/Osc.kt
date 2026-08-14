@@ -55,13 +55,7 @@ const val JOYSTICK_SIZE = 200
 const val JOYSTICK_OFFSET = 110
 const val TOP_BAR_SPACING = 90
 
-/**
- * Сколько миллисекунд после отправки Y «ждём» запроса поля ввода, чтобы
- * автоматически открыть экранную клавиатуру. Если за это время ввод не
- * запросили — флаг autoOpenOnTextInput сбрасывается, и клавиатура по
- * случайному будущему showTextInput сама не откроется.
- */
-private const val AUTO_OPEN_TIMEOUT_MS = 2000L
+
 
 /**
  * Class to hold on-screen control elements such as buttons or joysticks.
@@ -571,20 +565,11 @@ class Osc {
     private var visibilityState = 0
 
     /**
-     * Кнопка в правом верхнем углу: сама решает, показывать ли себя как
-     * иконку клавиатуры (когда игра запросила ввод текста) или как F12/F11.
+     * Угловая кнопка: при активном вводе показывает экранную клавиатуру,
+     * иначе работает как F11/F12 (двойной тап / удержание).
      */
     private val kbdToggle = KeyboardToggleButton { toggleKeyboard() }
 
-    /**
-     * Флаг «при следующем запросе поля ввода сразу открыть экранную
-     * клавиатуру, не дожидаясь тапа по угловой кнопке». Взводится перед
-     * отправкой Y в doQuickSave() и сбрасывается либо когда OSK открылась
-     * автоматически, либо по таймауту (если Y не привёл к полю ввода).
-     */
-    private var autoOpenOnTextInput = false
-    private val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
-    private val autoOpenTimeoutRunnable = Runnable { autoOpenOnTextInput = false }
 
     private val btnMouse = OscCustomButton("mouse", "mouse.png", OscVisibility.NULL,
         R.drawable.mouse, TOP_BAR_SPACING * 7, 0) { toggleMouse() }
@@ -603,16 +588,13 @@ class Osc {
             R.drawable.scroll_wheel, 0, 450, CONTROL_DEFAULT_SIZE, true, 0, 0, 0, 0, 0),
         OscImageButton("crouch", "sneak.png", OscVisibility.NORMAL,
             R.drawable.sneak, 100, 650, 113),
-        OscImageButton("pause", "pause.png", OscVisibility.ESSENTIAL,
-            R.drawable.pause, 965, 170, KeyEvent.KEYCODE_ESCAPE),
+        OscImageButton("pause_top_left", "pause.png", OscVisibility.ESSENTIAL,
+            R.drawable.pause, 12, 12, KeyEvent.KEYCODE_ESCAPE),
         OscImageButton("inventory", "inventory.png", OscVisibility.NULL,
             R.drawable.inventory, 965, 290, 3, true),
-        // QuickSave: короткий тап — обычная логика (Y + автооткрытие клавиатуры),
-        // удержание 1000мс — F2.
-        OscLongPressButton("quickSave", "save.png", OscVisibility.NULL,
-            R.drawable.save, 965, 380, 1000L,
-            shortHandler = { doQuickSave() },
-            longPressHandler = { sendKey(KeyEvent.KEYCODE_F2) }),
+        // Wait: вместо прежней Y-кнопки отправляем штатную T.
+        OscImageButton("wait", "wait.png", OscVisibility.NULL,
+            R.drawable.wait, 965, 380, KeyEvent.KEYCODE_T),
         OscImageButton("magic", "toggle_magic.png", OscVisibility.NORMAL,
             R.drawable.toggle_magic, 965, 470, KeyEvent.KEYCODE_R),
         OscImageButton("weapon", "toggle_weapon.png", OscVisibility.NORMAL,
@@ -731,30 +713,11 @@ class Osc {
     }
 
     /**
-     * Вызывается из SDL при запросе показа поля ввода. Мы НЕ открываем клавиатуру
-     * сами — вместо этого переводим угловую кнопку в «клавиатурный» режим,
-     * она начинает пульсировать и по тапу пользователь сам откроет/закроет OSK.
-     */
-    /**
-     * Вызывается из SDL при запросе показа поля ввода. Обычно — только
-     * переводим угловую кнопку в KEYBOARD-режим (пусть пульсирует),
-     * а откроет OSK уже сам пользователь тапом по кнопке.
-     *
-     * Исключение — если перед этим был вызван doQuickSave(): тогда Y уже
-     * нажат, SDL показывает поле для имени сейва, и клавиатуру хочется
-     * развернуть сразу, чтобы не делать лишний тап.
+     * SDL запросил текстовый ввод: переводим угловую кнопку в режим
+     * клавиатуры. Саму OSK пользователь открывает тапом по этой кнопке.
      */
     fun onTextInputRequested() {
         kbdToggle.setMode(KeyboardToggleMode.KEYBOARD)
-        if (autoOpenOnTextInput) {
-            autoOpenOnTextInput = false
-            mainHandler.removeCallbacks(autoOpenTimeoutRunnable)
-            if (!keyboardVisible) {
-                osk.show()
-                keyboardVisible = true
-                showBasedOnState()
-            }
-        }
     }
 
     /**
@@ -769,9 +732,6 @@ class Osc {
             showBasedOnState()
         }
         kbdToggle.setMode(KeyboardToggleMode.POSTPROCESS)
-        // Если поле ввода пропало — отменяем ожидание автооткрытия.
-        autoOpenOnTextInput = false
-        mainHandler.removeCallbacks(autoOpenTimeoutRunnable)
     }
 
     fun toggleKeyboard() {
@@ -789,28 +749,6 @@ class Osc {
         return keyboardVisible
     }
 
-    /**
-     * Быстрое сохранение. OpenMW по Y открывает диалог «сохранить?»,
-     * в котором нужно ввести имя сейва (или оставить дефолт и нажать Enter).
-     * Поток такой:
-     *  1) взводим «autoOpen» — при следующем showTextInput клавиатура откроется сама;
-     *  2) жмём Y — игра показывает диалог сохранения и запрашивает ввод;
-     *  3) SDL дёргает showTextInput → onTextInputRequested() → клавиатура сама открылась.
-     * Таким образом пользователю не нужно делать дополнительный тап.
-     *
-     * Если по какой-то причине Y не привёл к полю ввода (например, игра
-     * сейчас на экране, где Y не работает) — autoOpenOnTextInput будет
-     * сброшен таймаутом, и случайный следующий showTextInput через минуту
-     * не откроет OSK автоматически.
-     */
-    private fun doQuickSave() {
-        autoOpenOnTextInput = true
-        mainHandler.removeCallbacks(autoOpenTimeoutRunnable)
-        mainHandler.postDelayed(autoOpenTimeoutRunnable, AUTO_OPEN_TIMEOUT_MS)
-
-        SDLActivity.onNativeKeyDown(KeyEvent.KEYCODE_Y)
-        SDLActivity.onNativeKeyUp(KeyEvent.KEYCODE_Y)
-    }
 
     /** Короткое «нажал-отпустил» по клавише (для long-press обработчиков). */
     private fun sendKey(keyCode: Int) {

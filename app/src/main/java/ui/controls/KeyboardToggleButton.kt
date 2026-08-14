@@ -10,7 +10,7 @@
 
     2. POSTPROCESS — поля ввода нет.
        Иконка postprocessing.png, статичная альфа 0.3 как у osc-кнопок.
-       Короткий тап — F11, долгое удержание — F12 + вспышка-рамка.
+       Двойной тап — F11, долгое удержание — F12 + вспышка-рамка.
 
     При исчезновении поля ввода — сама возвращается в режим POSTPROCESS.
     Если требуется полностью скрыть — вызвать hide().
@@ -39,6 +39,9 @@ import org.libsdl.app.SDLActivity
 
 /** Пороговое время в мс для обнаружения long-press в режиме POSTPROCESS. */
 private const val LONG_PRESS_MS = 500L
+
+/** Максимальный интервал между двумя тапами для F11. */
+private const val DOUBLE_TAP_MS = 350L
 
 /** Виртуальная система координат, как в Osc.kt. */
 private const val VU_W = 1024
@@ -75,8 +78,12 @@ class KeyboardToggleButton(
 
     private val handler = Handler(Looper.getMainLooper())
     private var longPressFired = false
+    private var firstTapAt = 0L
+    private val resetTapRunnable = Runnable { firstTapAt = 0L }
     private val longPressRunnable = Runnable {
         longPressFired = true
+        firstTapAt = 0L
+        handler.removeCallbacks(resetTapRunnable)
         // Долгое удержание — F12 + вспышка-рамка, как при срабатывании затвора.
         SDLActivity.onNativeKeyDown(KeyEvent.KEYCODE_F12)
         SDLActivity.onNativeKeyUp(KeyEvent.KEYCODE_F12)
@@ -176,9 +183,19 @@ class KeyboardToggleButton(
                     KeyboardToggleMode.POSTPROCESS -> {
                         handler.removeCallbacks(longPressRunnable)
                         if (!longPressFired) {
-                            // Короткий тап — F11.
-                            SDLActivity.onNativeKeyDown(KeyEvent.KEYCODE_F11)
-                            SDLActivity.onNativeKeyUp(KeyEvent.KEYCODE_F11)
+                            // F11 только по двойному тапу. Первый тап ничего не
+                            // отправляет, поэтому случайное касание не переключает режим.
+                            val now = android.os.SystemClock.uptimeMillis()
+                            if (firstTapAt != 0L && now - firstTapAt <= DOUBLE_TAP_MS) {
+                                firstTapAt = 0L
+                                handler.removeCallbacks(resetTapRunnable)
+                                SDLActivity.onNativeKeyDown(KeyEvent.KEYCODE_F11)
+                                SDLActivity.onNativeKeyUp(KeyEvent.KEYCODE_F11)
+                            } else {
+                                firstTapAt = now
+                                handler.removeCallbacks(resetTapRunnable)
+                                handler.postDelayed(resetTapRunnable, DOUBLE_TAP_MS)
+                            }
                         }
                     }
                 }
@@ -214,6 +231,8 @@ class KeyboardToggleButton(
 
     private fun applyMode(newMode: KeyboardToggleMode) {
         mode = newMode
+        firstTapAt = 0L
+        handler.removeCallbacks(resetTapRunnable)
         val v = view ?: return
         when (newMode) {
             KeyboardToggleMode.KEYBOARD -> {
@@ -304,6 +323,8 @@ class KeyboardToggleButton(
     fun remove() {
         stopPulse()
         handler.removeCallbacks(longPressRunnable)
+        handler.removeCallbacks(resetTapRunnable)
+        firstTapAt = 0L
         val v = view ?: return
         (v.parent as? ViewGroup)?.removeView(v)
         view = null
