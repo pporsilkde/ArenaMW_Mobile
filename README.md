@@ -56,3 +56,9 @@ HDR, Bloom, SSR и SMAA доступны как opt-in эффекты. Они в
 The builder tracks `pporsilkde/AMW` `main`, matching GitHub Actions. The complete patch chain was revalidated against commit `731f005b609b37f204f974c36c57496ce5a66beb` from the supplied AMW(6) snapshot. V13.2 rebases the settings UI after upstream removed an old Effects block, physically removes the unsafe Effects/Advanced Android pages, fixes tab mapping, removes visible PBR-quality/SMAA-threshold controls, hard-disables native fog/god-rays/first-person depth bridging, enforces shadow-map 1024 and shadow-distance 8192 caps at runtime, adds a separate shadow-distance launcher control, preserves desktop-style portable `build.ini` metadata/load order, and reduces default streaming worker contention. See `AMW_ANDROID_V13_NOTES_RU.txt`.
 
 Because the builder follows `main`, a future upstream change may intentionally make `git apply` fail. Rebase the affected patch rather than forcing or partially applying it.
+
+## ArenaMW Android V13.3 notes
+- In-game PBR, HDR and Bloom pages are removed on Android; SMAA is removed from Display.
+- Launcher Graphics is placed directly below Mods.
+- Official OpenMW application/start icon is used.
+- Water mode is preset-aware: Very Low/Performance/Battery use `Water/shader mode = simple`; Balanced/Quality use `new` (PBR).
