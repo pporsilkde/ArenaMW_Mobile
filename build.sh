@@ -172,7 +172,7 @@ mkdir -p prefix/$ARCH/
 # a rebuild of Bullet/OSG/MyGUI/etc. Only the wrapper ExternalProject is reset.
 GL4ES_REPO="${GL4ES_GIT_REPOSITORY:-https://github.com/Sisah2/NG-GL4ES.git}"
 GL4ES_TAG="${GL4ES_GIT_TAG:-Openmw3}"
-GL4ES_PATCHSET="arenamw-openmw3-android-r21e-v2"
+GL4ES_PATCHSET="arenamw-openmw3-android-r21e-v3"
 GL4ES_CACHE_ID="$GL4ES_REPO@$GL4ES_TAG#$GL4ES_PATCHSET"
 GL4ES_MARKER="build/$ARCH/.ng-gl4es-source"
 if [[ ! -f "$GL4ES_MARKER" || "$(cat "$GL4ES_MARKER" 2>/dev/null || true)" != "$GL4ES_CACHE_ID" ]]; then

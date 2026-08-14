@@ -69,3 +69,8 @@ Because the builder follows `main`, a future upstream change may intentionally m
 - Moves HUD FPS text to X=96 and moves the pause OSC button to the upper-left corner.
 - Replaces the old Y/save-chat OSC action with the Wait icon mapped to `T`.
 - Postprocess/PIC button sends `F11` only on a double tap; long hold still sends `F12`.
+
+
+## V13.7.3 NG-GL4ES / NDK r21e compatibility
+
+Sisah2/Openmw3 is built out-of-source. ArenaMW patches its pinned glslang diagnostic path formatting so Android NDK r21e does not require `std::filesystem::absolute()`. Shader compilation semantics are unchanged. See `V13_7_3_NOTES.md`.
