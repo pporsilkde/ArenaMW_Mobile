@@ -1,0 +1,121 @@
+diff --git a/apps/openmw/mwrender/renderingmanager.cpp b/apps/openmw/mwrender/renderingmanager.cpp
+index da9d569..913782c 100644
+--- a/apps/openmw/mwrender/renderingmanager.cpp
++++ b/apps/openmw/mwrender/renderingmanager.cpp
+@@ -781,6 +781,18 @@ namespace MWRender
+         for (auto itr = shadowDefines.begin(); itr != shadowDefines.end(); itr++)
+             globalDefines[itr->first] = itr->second;
+ 
++        // Android launcher gamma is process-scoped because SDL gamma ramps are
++        // unreliable on GLES devices. Feed it into the scene shaders instead.
++        float shaderGamma = 1.f;
++        if (const char* gammaEnv = std::getenv("OPENMW_GAMMA"))
++        {
++            char* end = nullptr;
++            const float parsedGamma = std::strtof(gammaEnv, &end);
++            if (end != gammaEnv && std::isfinite(parsedGamma))
++                shaderGamma = std::clamp(parsedGamma, 0.5f, 3.f);
++        }
++        globalDefines["gamma"] = std::to_string(shaderGamma);
++
+         globalDefines["forcePPL"] = Settings::Manager::getBool("force per pixel lighting", "Shaders") ? "1" : "0";
+         globalDefines["clamp"] = Settings::Manager::getBool("clamp lighting", "Shaders") ? "1" : "0";
+         globalDefines["preLightEnv"] = Settings::Manager::getBool("apply lighting to environment maps", "Shaders") ? "1" : "0";
+diff --git a/files/shaders/groundcover_fragment.glsl b/files/shaders/groundcover_fragment.glsl
+index af0f1b3..89db922 100644
+--- a/files/shaders/groundcover_fragment.glsl
++++ b/files/shaders/groundcover_fragment.glsl
+@@ -141,4 +141,7 @@ void main()
+     gl_FragData[0].xyz = mix(gl_FragData[0].xyz, arenaBlendedFog, fogValue);
+ 
+     applyShadowDebugOverlay();
++
++    // Launcher-controlled scene gamma. Clamp the base to avoid pow() on negative HDR intermediates.
++    gl_FragData[0].xyz = pow(max(gl_FragData[0].xyz, vec3(0.0)), vec3(1.0 / max(@gamma, 0.01)));
+ }
+diff --git a/files/shaders/nv_default_fragment.glsl b/files/shaders/nv_default_fragment.glsl
+index 3f65fdc..e29e6f0 100644
+--- a/files/shaders/nv_default_fragment.glsl
++++ b/files/shaders/nv_default_fragment.glsl
+@@ -105,4 +105,7 @@ void main()
+ #endif
+ 
+     applyShadowDebugOverlay();
++
++    // Launcher-controlled scene gamma. Clamp the base to avoid pow() on negative HDR intermediates.
++    gl_FragData[0].xyz = pow(max(gl_FragData[0].xyz, vec3(0.0)), vec3(1.0 / max(@gamma, 0.01)));
+ }
+diff --git a/files/shaders/nv_nolighting_fragment.glsl b/files/shaders/nv_nolighting_fragment.glsl
+index 27679a0..494bd92 100644
+--- a/files/shaders/nv_nolighting_fragment.glsl
++++ b/files/shaders/nv_nolighting_fragment.glsl
+@@ -52,4 +52,7 @@ void main()
+ #endif
+ 
+     gl_FragData[0].xyz = mix(gl_FragData[0].xyz, gl_Fog.color.xyz, fogValue);
++
++    // Launcher-controlled scene gamma. Clamp the base to avoid pow() on negative HDR intermediates.
++    gl_FragData[0].xyz = pow(max(gl_FragData[0].xyz, vec3(0.0)), vec3(1.0 / max(@gamma, 0.01)));
+ }
+diff --git a/files/shaders/objects_fragment.glsl b/files/shaders/objects_fragment.glsl
+index 52ef3ac..5b5fd03 100644
+--- a/files/shaders/objects_fragment.glsl
++++ b/files/shaders/objects_fragment.glsl
+@@ -424,4 +424,7 @@ void main()
+ #endif
+ 
+     applyShadowDebugOverlay();
++
++    // Launcher-controlled scene gamma. Clamp the base to avoid pow() on negative HDR intermediates.
++    gl_FragData[0].xyz = pow(max(gl_FragData[0].xyz, vec3(0.0)), vec3(1.0 / max(@gamma, 0.01)));
+ }
+diff --git a/files/shaders/terrain_fragment.glsl b/files/shaders/terrain_fragment.glsl
+index 6638b4c..835e614 100644
+--- a/files/shaders/terrain_fragment.glsl
++++ b/files/shaders/terrain_fragment.glsl
+@@ -241,4 +241,7 @@ void main()
+     gl_FragData[0].xyz = mix(gl_FragData[0].xyz, gl_Fog.color.xyz, fogValue);
+ 
+     applyShadowDebugOverlay();
++
++    // Launcher-controlled scene gamma. Clamp the base to avoid pow() on negative HDR intermediates.
++    gl_FragData[0].xyz = pow(max(gl_FragData[0].xyz, vec3(0.0)), vec3(1.0 / max(@gamma, 0.01)));
+ }
+diff --git a/files/shaders/water_fragment.glsl b/files/shaders/water_fragment.glsl
+index 8911fce..68a2d0a 100644
+--- a/files/shaders/water_fragment.glsl
++++ b/files/shaders/water_fragment.glsl
+@@ -759,5 +759,8 @@ void main(void) {
+     gl_FragData[0].xyz = mix(gl_FragData[0].xyz, arenaBlendedFog, fogVal);
+ 
+     applyShadowDebugOverlay();
++
++    // Launcher-controlled scene gamma. Clamp the base to avoid pow() on negative HDR intermediates.
++    gl_FragData[0].xyz = pow(max(gl_FragData[0].xyz, vec3(0.0)), vec3(1.0 / max(@gamma, 0.01)));
+ }
+     
+\ No newline at end of file
+diff --git a/files/shaders/water_pbr_android_fragment.glsl b/files/shaders/water_pbr_android_fragment.glsl
+index 5b64283..48d535c 100644
+--- a/files/shaders/water_pbr_android_fragment.glsl
++++ b/files/shaders/water_pbr_android_fragment.glsl
+@@ -1200,4 +1200,7 @@ void main(void)
+ #endif // PBR_ENABLED
+ 
+     applyShadowDebugOverlay();
++
++    // Launcher-controlled scene gamma. Clamp the base to avoid pow() on negative HDR intermediates.
++    gl_FragData[0].xyz = pow(max(gl_FragData[0].xyz, vec3(0.0)), vec3(1.0 / max(@gamma, 0.01)));
+ }
+diff --git a/files/shaders/water_pbr_fragment.glsl b/files/shaders/water_pbr_fragment.glsl
+index 27f3063..1315dba 100644
+--- a/files/shaders/water_pbr_fragment.glsl
++++ b/files/shaders/water_pbr_fragment.glsl
+@@ -1183,4 +1183,7 @@ void main(void)
+ #endif // PBR_ENABLED
+ 
+     applyShadowDebugOverlay();
++
++    // Launcher-controlled scene gamma. Clamp the base to avoid pow() on negative HDR intermediates.
++    gl_FragData[0].xyz = pow(max(gl_FragData[0].xyz, vec3(0.0)), vec3(1.0 / max(@gamma, 0.01)));
+ }

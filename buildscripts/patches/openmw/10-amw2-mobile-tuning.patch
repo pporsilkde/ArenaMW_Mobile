@@ -1,0 +1,112 @@
+diff --git a/files/mygui/openmw_hud.layout b/files/mygui/openmw_hud.layout
+index 53e4ab0..f2a49f6 100644
+--- a/files/mygui/openmw_hud.layout
++++ b/files/mygui/openmw_hud.layout
+@@ -6,7 +6,7 @@
+         <Widget type="Widget" position="0 0 300 200" name="GameplayHud" align="Stretch">
+             <Property key="NeedMouse" value="false"/>
+ 	
+-        <Widget type="TextBox" skin="SandBrightText" position="8 6 72 22" name="FpsText" align="Left Top">
++        <Widget type="TextBox" skin="SandBrightText" position="30 6 72 22" name="FpsText" align="Left Top">
+             <Property key="NeedMouse" value="false"/>
+             <Property key="TextAlign" value="Left"/>
+             <Property key="TextShadow" value="true"/>
+diff --git a/files/settings-default.cfg b/files/settings-default.cfg
+index 229780b..84c2e13 100644
+--- a/files/settings-default.cfg
++++ b/files/settings-default.cfg
+@@ -5,7 +5,7 @@ near clip = 3
+ small feature culling = true
+ small feature culling pixel size = 8
+ 
+-viewing distance = 24576
++viewing distance = 4096
+ optimization land = balance
+ 
+ field of view = 55
+@@ -70,7 +70,7 @@ preload fast travel = false
+ preload doors = false
+ preload distance = 1000
+ preload instances = true
+-preload cell cache min = 12
++preload cell cache min = 16
+ preload cell cache max = 64
+ preload cell expiry delay = 5
+ prediction time = 1
+@@ -87,12 +87,12 @@ distant terrain = true
+ lod factor = 0.4
+ 
+ # Controls only the Vertex LOD. Change in increments of 1, each change doubles (or halves) the number of vertices. Values > 0 increase detail, values < 0 reduce detail.
+-vertex lod mod = -2
++vertex lod mod = -3
+ 
+ # Controls when the distant terrain will flip to composited textures instead of high-detail textures, should be >= -3.
+ # Higher value is more detailed textures.
+ composite map level = -3
+-composite map resolution = 1024
++composite map resolution = 512
+ max composite geometry size = 4.0
+ object paging = true
+ object paging active grid = true
+@@ -515,9 +515,9 @@ object display lists = true
+ shader mode = new
+ # Legacy compatibility key kept in sync by the in-game selector.
+ shader = true
+-rtt size = 512
+-refraction = true
+-reflection detail = 3
++rtt size = 256
++refraction = false
++reflection detail = 2
+ 
+ # Runtime caustics multiplier. Valid UI range: 0.0 to 3.0.
+ caustics intensity = 1.0
+@@ -759,9 +759,9 @@ min update interval ms = 250
+ wait until min distance to player = 5
+ 
+ [Shadows]
+-enable shadows = true
++enable shadows = false
+ number of shadow maps = 2
+-maximum shadow map distance = 6144
++maximum shadow map distance = 8192
+ shadow fade start = 0.9
+ allow shadow map overlap = true
+ split point uniform logarithmic ratio = 0.5
+@@ -769,17 +769,17 @@ split point bias = 0.0
+ enable debug hud = false
+ enable debug overlay = false
+ compute scene bounds = bounds
+-shadow map resolution = 512
++shadow map resolution = 1024
+ minimum lispsm near far ratio = 0.25
+ polygon offset factor = 1.1
+ polygon offset units = 4.0
+ normal offset distance = 1.0
+-use front face culling = true
+-actor shadows = true
+-player shadows = true
++use front face culling = false
++actor shadows = false
++player shadows = false
+ terrain shadows = false
+-object shadows = true
+-enable indoor shadows = true
++object shadows = false
++enable indoor shadows = false
+ 
+ # Runtime shadow sampling improvements. Shadow map generation, cascades, bias
+ # and caster selection remain controlled by the stock ArenaMW shadow system.
+@@ -884,10 +884,10 @@ enabled = true
+ 
+ # A groundcover density (0.0 <= value <= 1.0)
+ # 1.0 means 100% density
+-density = 0.9
++density = 0.8
+ 
+ # A maximum distance in game units on which groundcover is rendered.
+-rendering distance = 9830.4
++rendering distance = 7100.0
+ 
+ # A minimum size of groundcover chunk in cells (0.125, 0.25, 0.5, 1.0)
+ min chunk size = 0.5

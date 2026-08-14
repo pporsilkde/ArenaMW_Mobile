@@ -1,3 +1,8 @@
+
+## AMW2 Android patch pipeline V15
+
+For the current `AMW(2)` base, engine compatibility changes are applied at build time through `patches/openmw/apply-series.sh`. See `AMW2_PATCH_PIPELINE_V15_RU.md` for the active AMW2-native patch series, Android graphics profiles, shadow caps (1024 / 8192), and the NDK r21e MOC strategy.
+
 # ArenaMW Android — Complex Water V3
 
 Текущая тестовая ветка: сложная PBR-вода адаптирована для Android GLES/NG-GL4ES. См. `COMPLEX_WATER_V3_RU.md`.

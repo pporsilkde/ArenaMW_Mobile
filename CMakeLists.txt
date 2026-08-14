@@ -61,7 +61,7 @@ project(arenamw-android)
 
 # ArenaMW source can be overridden from the command line, for example:
 #   cmake ... -DARENAMW_REPOSITORY=/absolute/path/to/ArenaMW -DARENAMW_GIT_TAG=main
-set(ARENAMW_REPOSITORY "https://github.com/MrZer0x0/ArenaMW.git" CACHE STRING "ArenaMW Git repository or local source path")
+set(ARENAMW_REPOSITORY "https://github.com/pporsilkde/AMW.git" CACHE STRING "ArenaMW Git repository or local source path")
 set(ARENAMW_GIT_TAG "main" CACHE STRING "ArenaMW branch, tag or commit")
 
 include(ExternalProject)
@@ -494,14 +494,9 @@ set(OPENMW_COMMON
 )
 
 set(ARENAMW_PATCH
-	# Keep only the Android compatibility patches used by the original builder.
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/01-loadingscreen-disable-for-now.patch &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/02-windowmanagerimp-always-show-mouse-when-possible-pat.patch &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/03-android-fix-context-being-lost-on-app-minimize.patch &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/04-settingswindow-save-user-settings-file-when-ok-is-pr.patch &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/05-components-misc-stringops-use-boost-format-instead-o.patch &&
-	cp ${CMAKE_SOURCE_DIR}/patches/openmw/android_main.cpp <SOURCE_DIR>/apps/openmw/android_main.cpp &&
-	sh ${CMAKE_SOURCE_DIR}/patches/openmw/patch-sse2neon.sh <SOURCE_DIR>
+    # AMW2-native build-time patch pipeline. The source checkout stays clean in
+    # the repository; Android compatibility is applied only inside ExternalProject.
+    bash ${CMAKE_SOURCE_DIR}/patches/openmw/apply-series.sh <SOURCE_DIR>
 )
 
 # Original Android dependency stack, reduced to the single-player requirements.
