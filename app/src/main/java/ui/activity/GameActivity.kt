@@ -101,21 +101,14 @@ class GameActivity : SDLActivity() {
             Os.setenv("OSG_COP_VALUE", "0x00000100", true)
             Os.setenv("OSG_NOTIFY_LEVEL", "WARN", true)
 
-            // ── OSG profile from the AMW2-native graphics dialog ──────────────
-            // MainActivity writes the same profile into settings.cfg before launch,
-            // but the process-level OSG worker variables must be set here as well,
-            // immediately before libopenmw is loaded.
-            GraphicsPresets.ensureAutoInitialized(this, prefs!!)
-            val osgLevel = GraphicsPresets.normalizeLevel(
-                prefs!!.getString(GraphicsPresets.OSG_KEY, "medium")
-            )
-            val osgProfile = GraphicsPresets.osg(osgLevel)
-            Os.setenv("OSG_MAX_PAGEDLOD", osgProfile.maxPagedLod.toString(), true)
-            Os.setenv("OSG_THREADING", osgProfile.threading, true)
-            Os.setenv("OSG_NUM_DATABASE_THREADS", osgProfile.databaseThreads.toString(), true)
-            Os.setenv("OSG_NUM_COMPILE_THREADS", osgProfile.compileThreads.toString(), true)
-            Os.setenv("OSG_DATABASE_PAGER_THREADS", osgProfile.pagerThreads.toString(), true)
-            Os.setenv("OSG_SHADER_CACHE_ENABLED", if (osgProfile.shaderCache) "1" else "0", true)
+            // ── OSG Threading из отдельного профиля OSG ─────────────────────
+            val osgPreset = GraphicsPresets.getOsgPreset(prefs!!)
+            Os.setenv("OSG_MAX_PAGEDLOD", osgPreset.maxPagedLOD.toString(), true)
+            Os.setenv("OSG_THREADING", osgPreset.osgThreading, true)
+            Os.setenv("OSG_NUM_DATABASE_THREADS", osgPreset.dbThreads.toString(), true)
+            Os.setenv("OSG_NUM_COMPILE_THREADS", osgPreset.compileThreads.toString(), true)
+            Os.setenv("OSG_DATABASE_PAGER_THREADS", osgPreset.pagerThreads.toString(), true)
+            Os.setenv("OSG_SHADER_CACHE_ENABLED", "1", true)
 
             // ── NG-GL4ES специфичные переменные ──────────────────────────────
             // Keep the known-working simple converter for the general ArenaMW 0.47 renderer.
@@ -136,11 +129,9 @@ class GameActivity : SDLActivity() {
             Os.setenv("LIBGL_LOGSHADERERROR", "1", true)
             Os.setenv("OPENMW_DISABLE_LOGS", "0", true)
 
-            // Do not bind texture downscaling to the OSG selector. In the old
-            // launcher the battery preset silently enabled LIBGL_SHRINK=6; with
-            // independent AMW2 categories that would make changing only OSG
-            // unexpectedly destroy texture quality. Keep native texture size by
-            // default; an explicit envLine override can still change it later.
+            // Never use GL4ES texture shrink for graphics presets. It destroys
+            // terrain splat/material clarity, especially in Battery Saver.
+            // Performance presets reduce LOD/distance/threading instead.
             Os.setenv("LIBGL_SHRINK", "0", true)
 
         } catch (e: ErrnoException) {

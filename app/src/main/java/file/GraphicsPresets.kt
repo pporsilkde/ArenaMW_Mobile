@@ -1,206 +1,348 @@
 /*
-    ArenaMW Android graphics/performance profiles for the AMW2 mobile branch.
+    ArenaMW Android graphics profiles.
 
-    The Android launcher owns profile selection. The engine is still protected by
-    hard runtime caps for shadow map size/distance, so a stale settings.cfg cannot
-    bypass the mobile safety limits.
+    V16 turns the old single launcher preset into a modern group-based profile.
+    The launcher only writes OpenMW settings after the user changes a launcher
+    profile (or after the first-run auto profile is selected). This is important:
+    settings changed later from OpenMW's own in-game menu are not silently reset
+    on every launcher start.
 */
 package file
 
 import android.app.ActivityManager
 import android.content.Context
 import android.content.SharedPreferences
-import android.os.Build
+
+import java.util.Locale
 
 object GraphicsPresets {
-    const val MASTER_KEY = "pref_graphics_master"
-    const val AUTO_LEVEL_KEY = "pref_graphics_auto_level"
-    const val AUTO_INITIALIZED_KEY = "pref_graphics_auto_initialized_v15"
-    const val OSG_KEY = "pref_graphics_osg"
-    const val STREAMING_KEY = "pref_graphics_streaming"
-    const val TERRAIN_KEY = "pref_graphics_terrain"
-    const val SHADERS_KEY = "pref_graphics_shaders"
-    const val LIGHTING_KEY = "pref_graphics_lighting"
-    const val SHADOWS_KEY = "pref_graphics_shadows"
-    const val GRASS_KEY = "pref_graphics_grass"
+    const val PREF_OVERALL = "pref_graphics_preset"
+    const val PREF_OSG = "pref_graphics_osg_preset"
+    const val PREF_STREAMING = "pref_graphics_streaming_preset"
+    const val PREF_TERRAIN = "pref_graphics_terrain_preset"
+    const val PREF_SHADERS = "pref_graphics_shaders_preset"
+    const val PREF_LIGHTING = "pref_graphics_lighting_preset"
+    const val PREF_SHADOWS = "pref_graphics_shadows_preset"
+    const val PREF_GRASS = "pref_graphics_grass_preset"
 
-    val DETAIL_KEYS = arrayOf(OSG_KEY, STREAMING_KEY, TERRAIN_KEY, SHADERS_KEY, LIGHTING_KEY, SHADOWS_KEY, GRASS_KEY)
-    val LEVELS = arrayOf("low", "medium", "high", "ultra")
+    const val PREF_INITIALIZED = "arenamw_graphics_profiles_v16_initialized"
+    const val PREF_DIRTY = "arenamw_graphics_profiles_v16_dirty"
+    const val PREF_AUTO_DETECTED = "arenamw_graphics_profiles_v16_auto_detected"
 
-    data class OsgProfile(
-        val threading: String,
+    const val LOW = "low"
+    const val MEDIUM = "medium"
+    const val HIGH = "high"
+    const val ULTRA = "ultra"
+    const val CUSTOM = "custom"
+
+    val LEVELS = arrayOf(LOW, MEDIUM, HIGH, ULTRA)
+
+    data class OsgPreset(
+        val osgThreading: String,
         val pagerThreads: Int,
-        val databaseThreads: Int,
+        val dbThreads: Int,
         val compileThreads: Int,
-        val maxPagedLod: Int,
-        val shaderCache: Boolean
+        val maxPagedLOD: Int,
+        val asyncNumThreads: Int
     )
 
-    data class StreamingProfile(
+    data class StreamingPreset(
         val viewingDistance: Int,
         val preloadDistance: Int,
         val preloadThreads: Int,
-        val preloadCacheMax: Int,
-        val cacheExpiry: Int,
         val targetFramerate: Int,
-        val asyncPhysicsThreads: Int
+        val cacheExpiryDelay: Int
     )
 
-    data class TerrainProfile(
+    data class TerrainPreset(
         val lodFactor: Float,
         val vertexLodMod: Int,
         val compositeMapLevel: Int,
         val compositeMapResolution: Int,
-        val maxCompositeGeometrySize: Float,
-        val objectPagingMergeFactor: Int,
-        val objectPagingMinSize: Float,
-        val distantTerrain: Boolean,
-        val objectPaging: Boolean
+        val maxCompositeGeometrySize: Float
     )
 
-    data class ShaderProfile(
+    data class ShaderPreset(
         val materialQuality: String,
-        val autoUsePbrMaps: Boolean,
-        val enhancedPbrLighting: Boolean,
-        val waterReflectionDetail: Int,
-        val waterRttSize: Int
+        val objectNormalMaps: Boolean,
+        val objectSpecularMaps: Boolean,
+        val terrainNormalMaps: Boolean,
+        val terrainSpecularMaps: Boolean
     )
 
-    data class LightingProfile(
-        val forcePerPixel: Boolean,
+    data class LightingPreset(
+        val perPixelLighting: Boolean,
         val maxLights: Int,
-        val radialFog: Boolean,
-        val clampLighting: Boolean
+        val maximumLightDistance: Int,
+        val lightBoundsMultiplier: Float,
+        val lightFadeStart: Float
     )
 
-    data class ShadowProfile(
+    data class ShadowPreset(
         val enabled: Boolean,
-        val actors: Boolean,
-        val objects: Boolean,
-        val terrain: Boolean,
-        val resolution: Int,
-        val distance: Int,
-        val fadeStart: Float
+        val actorShadows: Boolean,
+        val playerShadows: Boolean,
+        val objectShadows: Boolean,
+        val terrainShadows: Boolean,
+        val indoorShadows: Boolean,
+        val numberOfShadowMaps: Int,
+        val shadowMapResolution: Int,
+        val maximumShadowMapDistance: Int,
+        val filterSoftness: Float
     )
 
-    data class GrassProfile(
+    data class GrassPreset(
         val enabled: Boolean,
         val density: Float,
-        val distance: Int,
+        val renderingDistance: Float,
         val minChunkSize: Float
     )
 
-    fun normalizeLevel(value: String?): String {
-        return if (value != null && LEVELS.contains(value)) value else "medium"
+    // Medium deliberately keeps the old APK's proven OSG 4/4/2 + MaxPagedLOD 6 base.
+    private val osgPresets = mapOf(
+        LOW to OsgPreset("CullDrawThreadPerContext", 2, 2, 1, 4, 1),
+        MEDIUM to OsgPreset("DrawThreadPerContext", 4, 4, 2, 6, 2),
+        HIGH to OsgPreset("DrawThreadPerContext", 5, 5, 2, 8, 2),
+        ULTRA to OsgPreset("DrawThreadPerContext", 6, 6, 3, 10, 3)
+    )
+
+    // Distances keep the useful old-launcher scale while avoiding the old desktop-like
+    // 32768/81920 extremes as automatic mobile defaults.
+    private val streamingPresets = mapOf(
+        LOW to StreamingPreset(4096, 1000, 1, 45, 8),
+        MEDIUM to StreamingPreset(5120, 1000, 2, 60, 10),
+        HIGH to StreamingPreset(8192, 3000, 2, 60, 12),
+        ULTRA to StreamingPreset(16384, 5000, 3, 60, 15)
+    )
+
+    // Keep terrain composite textures at the mobile-safe 1024 resolution.
+    private val terrainPresets = mapOf(
+        LOW to TerrainPreset(0.40f, -2, -3, 1024, 4.0f),
+        MEDIUM to TerrainPreset(0.65f, -1, -2, 1024, 4.0f),
+        HIGH to TerrainPreset(0.80f, -1, -1, 1024, 4.0f),
+        ULTRA to TerrainPreset(1.00f, 0, -1, 1024, 2.0f)
+    )
+
+    // Android "Ultra" is intentionally capped at ArenaMW's quality material path;
+    // it does not enable desktop-only HDR/post-processing or GL4ES texture shrink.
+    private val shaderPresets = mapOf(
+        LOW to ShaderPreset("none", false, false, false, false),
+        MEDIUM to ShaderPreset("simple", true, false, false, false),
+        HIGH to ShaderPreset("balanced", true, true, true, false),
+        ULTRA to ShaderPreset("quality", true, true, true, true)
+    )
+
+    private val lightingPresets = mapOf(
+        LOW to LightingPreset(false, 8, 4096, 2.25f, 0.65f),
+        MEDIUM to LightingPreset(false, 16, 6144, 3.00f, 0.45f),
+        HIGH to LightingPreset(true, 24, 8192, 3.30f, 0.32f),
+        ULTRA to LightingPreset(true, 32, 12288, 3.80f, 0.27f)
+    )
+
+    // Hard mobile limits requested for this port:
+    //   shadow map resolution <= 1024
+    //   maximum shadow distance <= 8192
+    private val shadowPresets = mapOf(
+        LOW to ShadowPreset(false, false, true, false, false, false, 1, 512, 3072, 0.85f),
+        MEDIUM to ShadowPreset(true, true, true, true, false, true, 1, 512, 5120, 1.00f),
+        HIGH to ShadowPreset(true, true, true, true, false, true, 2, 1024, 6144, 1.10f),
+        ULTRA to ShadowPreset(true, true, true, true, true, true, 2, 1024, 8192, 1.20f)
+    )
+
+    private val grassPresets = mapOf(
+        LOW to GrassPreset(true, 0.40f, 4096f, 1.0f),
+        MEDIUM to GrassPreset(true, 0.65f, 6144f, 0.5f),
+        HIGH to GrassPreset(true, 0.90f, 8192f, 0.5f),
+        ULTRA to GrassPreset(true, 1.00f, 9830.4f, 0.25f)
+    )
+
+    private fun normalizeLevel(level: String?): String {
+        return if (level != null && LEVELS.contains(level)) level else MEDIUM
     }
 
-    fun applyLevelToDetails(editor: SharedPreferences.Editor, level: String) {
-        val safe = normalizeLevel(level)
-        for (key in DETAIL_KEYS)
-            editor.putString(key, safe)
-    }
+    /**
+     * One-time first-launch selection. Existing users are migrated from the old
+     * single preset when possible; a fresh install gets a hardware-derived level.
+     */
+    fun ensureInitialized(context: Context, prefs: SharedPreferences): String {
+        if (prefs.getBoolean(PREF_INITIALIZED, false))
+            return normalizeOverall(prefs.getString(PREF_OVERALL, MEDIUM))
 
-    fun ensureAutoInitialized(context: Context, prefs: SharedPreferences) {
-        if (prefs.getBoolean(AUTO_INITIALIZED_KEY, false))
-            return
-
-        val detected = recommendLevel(context)
-        val edit = prefs.edit()
-        edit.putString(MASTER_KEY, "auto")
-        edit.putString(AUTO_LEVEL_KEY, detected)
-        applyLevelToDetails(edit, detected)
-        edit.putBoolean(AUTO_INITIALIZED_KEY, true)
-        edit.apply()
-    }
-
-    fun refreshAuto(context: Context, prefs: SharedPreferences): String {
-        val detected = recommendLevel(context)
-        val edit = prefs.edit()
-        edit.putString(MASTER_KEY, "auto")
-        edit.putString(AUTO_LEVEL_KEY, detected)
-        applyLevelToDetails(edit, detected)
-        edit.putBoolean(AUTO_INITIALIZED_KEY, true)
-        edit.apply()
-        return detected
-    }
-
-    fun recommendLevel(context: Context): String {
-        var ramGb = 4.0
-        try {
-            val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-            val info = ActivityManager.MemoryInfo()
-            am.getMemoryInfo(info)
-            ramGb = info.totalMem.toDouble() / (1024.0 * 1024.0 * 1024.0)
-        } catch (_: Exception) {
+        val old = prefs.getString(PREF_OVERALL, null)
+        val migrated = when (old) {
+            "battery", "performance", LOW -> LOW
+            "balanced", MEDIUM -> MEDIUM
+            "quality", HIGH -> HIGH
+            ULTRA -> ULTRA
+            else -> null
         }
+        val selected = migrated ?: detectRecommendedLevel(context)
 
+        prefs.edit()
+            .putString(PREF_OVERALL, selected)
+            .putString(PREF_OSG, selected)
+            .putString(PREF_STREAMING, selected)
+            .putString(PREF_TERRAIN, selected)
+            .putString(PREF_SHADERS, selected)
+            .putString(PREF_LIGHTING, selected)
+            .putString(PREF_SHADOWS, selected)
+            .putString(PREF_GRASS, selected)
+            .putString(PREF_AUTO_DETECTED, selected)
+            .putBoolean(PREF_DIRTY, true)
+            .putBoolean(PREF_INITIALIZED, true)
+            .apply()
+
+        return selected
+    }
+
+    fun detectRecommendedLevel(context: Context): String {
+        val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val info = ActivityManager.MemoryInfo()
+        am.getMemoryInfo(info)
+        val ramGb = info.totalMem.toDouble() / (1024.0 * 1024.0 * 1024.0)
         val cores = Runtime.getRuntime().availableProcessors()
-        val hardware = (Build.HARDWARE + " " + Build.BOARD + " " + Build.MODEL).toLowerCase()
-
-        // Conservative mobile-first scoring. RAM/CPU are reliable in the launcher;
-        // the hardware string provides only a small correction for very old SoCs.
-        var score = 0
-        if (ramGb >= 5.5) score++
-        if (ramGb >= 7.5) score++
-        if (ramGb >= 10.0) score++
-        if (cores >= 6) score++
-        if (cores >= 8) score++
-        if (hardware.contains("msm89") || hardware.contains("mt67") || hardware.contains("exynos7")) score--
+        val gles = am.deviceConfigurationInfo.reqGlEsVersion
+        val gles3 = gles >= 0x00030000
+        val gles32 = gles >= 0x00030002
 
         return when {
-            score >= 5 -> "ultra"
-            score >= 3 -> "high"
-            score >= 1 -> "medium"
-            else -> "low"
+            ramGb >= 10.0 && cores >= 8 && gles32 -> ULTRA
+            ramGb >= 6.0 && cores >= 8 && gles3 -> HIGH
+            ramGb >= 4.0 && cores >= 6 && gles3 -> MEDIUM
+            else -> LOW
         }
     }
 
-    fun osg(level: String): OsgProfile = when (normalizeLevel(level)) {
-        "low" -> OsgProfile("SingleThreaded", 2, 2, 1, 3, true)
-        "high" -> OsgProfile("DrawThreadPerContext", 4, 4, 2, 6, true)
-        "ultra" -> OsgProfile("DrawThreadPerContext", 5, 5, 2, 8, true)
-        else -> OsgProfile("CullDrawThreadPerContext", 3, 3, 1, 4, true)
+    fun normalizeOverall(value: String?): String {
+        return when (value) {
+            LOW, MEDIUM, HIGH, ULTRA, CUSTOM -> value
+            "battery", "performance" -> LOW
+            "balanced" -> MEDIUM
+            "quality" -> HIGH
+            else -> MEDIUM
+        }
     }
 
-    fun streaming(level: String): StreamingProfile = when (normalizeLevel(level)) {
-        "low" -> StreamingProfile(4096, 1000, 1, 32, 10, 45, 1)
-        "high" -> StreamingProfile(6144, 1750, 2, 64, 8, 60, 2)
-        "ultra" -> StreamingProfile(8192, 2250, 2, 96, 8, 60, 2)
-        else -> StreamingProfile(5120, 1250, 1, 48, 10, 60, 1)
+    fun getLevel(prefs: SharedPreferences, key: String): String {
+        return normalizeLevel(prefs.getString(key, MEDIUM))
     }
 
-    fun terrain(level: String): TerrainProfile = when (normalizeLevel(level)) {
-        "low" -> TerrainProfile(0.40f, -2, -3, 512, 4.0f, 100000, 1.00f, true, true)
-        "high" -> TerrainProfile(0.70f, -1, -2, 1024, 6.0f, 50000, 0.65f, true, true)
-        "ultra" -> TerrainProfile(0.85f, -1, -2, 1024, 8.0f, 35000, 0.50f, true, true)
-        else -> TerrainProfile(0.55f, -2, -3, 1024, 4.0f, 75000, 0.85f, true, true)
+    fun getOsgPreset(prefs: SharedPreferences): OsgPreset = osgPresets[getLevel(prefs, PREF_OSG)]!!
+
+    /**
+     * Called only by the graphics dialog's Apply button. Selecting a global
+     * level aligns every group. Custom preserves the independently selected rows.
+     */
+    fun saveSelection(
+        prefs: SharedPreferences,
+        overall: String,
+        osg: String,
+        streaming: String,
+        terrain: String,
+        shaders: String,
+        lighting: String,
+        shadows: String,
+        grass: String
+    ) {
+        val normalizedOverall = normalizeOverall(overall)
+        val editor = prefs.edit().putString(PREF_OVERALL, normalizedOverall)
+
+        if (normalizedOverall == CUSTOM) {
+            editor.putString(PREF_OSG, normalizeLevel(osg))
+            editor.putString(PREF_STREAMING, normalizeLevel(streaming))
+            editor.putString(PREF_TERRAIN, normalizeLevel(terrain))
+            editor.putString(PREF_SHADERS, normalizeLevel(shaders))
+            editor.putString(PREF_LIGHTING, normalizeLevel(lighting))
+            editor.putString(PREF_SHADOWS, normalizeLevel(shadows))
+            editor.putString(PREF_GRASS, normalizeLevel(grass))
+        } else {
+            editor.putString(PREF_OSG, normalizedOverall)
+            editor.putString(PREF_STREAMING, normalizedOverall)
+            editor.putString(PREF_TERRAIN, normalizedOverall)
+            editor.putString(PREF_SHADERS, normalizedOverall)
+            editor.putString(PREF_LIGHTING, normalizedOverall)
+            editor.putString(PREF_SHADOWS, normalizedOverall)
+            editor.putString(PREF_GRASS, normalizedOverall)
+        }
+
+        editor.putBoolean(PREF_DIRTY, true).apply()
     }
 
-    fun shaders(level: String): ShaderProfile = when (normalizeLevel(level)) {
-        "low" -> ShaderProfile("none", false, false, 1, 256)
-        "high" -> ShaderProfile("balanced", true, false, 3, 256)
-        "ultra" -> ShaderProfile("quality", true, false, 3, 512)
-        else -> ShaderProfile("simple", false, false, 2, 256)
+    /**
+     * Writes launcher-owned values only after the launcher profile has changed.
+     * In-game adjustments made afterwards stay authoritative on future launches.
+     */
+    fun applyPending(settingsFile: String, prefs: SharedPreferences) {
+        if (!prefs.getBoolean(PREF_DIRTY, false))
+            return
+
+        val streaming = streamingPresets[getLevel(prefs, PREF_STREAMING)]!!
+        val terrain = terrainPresets[getLevel(prefs, PREF_TERRAIN)]!!
+        val shaders = shaderPresets[getLevel(prefs, PREF_SHADERS)]!!
+        val lighting = lightingPresets[getLevel(prefs, PREF_LIGHTING)]!!
+        val shadows = shadowPresets[getLevel(prefs, PREF_SHADOWS)]!!
+        val grass = grassPresets[getLevel(prefs, PREF_GRASS)]!!
+        val osg = osgPresets[getLevel(prefs, PREF_OSG)]!!
+
+        Writer.write(settingsFile, "Camera", "viewing distance", streaming.viewingDistance.toString())
+        Writer.write(settingsFile, "Cells", "preload enabled", "true")
+        Writer.write(settingsFile, "Cells", "preload num threads", streaming.preloadThreads.toString())
+        Writer.write(settingsFile, "Cells", "preload distance", streaming.preloadDistance.toString())
+        Writer.write(settingsFile, "Cells", "preload exterior grid", "true")
+        Writer.write(settingsFile, "Cells", "preload instances", "true")
+        Writer.write(settingsFile, "Cells", "preload cell expiry delay", streaming.cacheExpiryDelay.toString())
+        Writer.write(settingsFile, "Cells", "cache expiry delay", streaming.cacheExpiryDelay.toString())
+        Writer.write(settingsFile, "Cells", "target framerate", streaming.targetFramerate.toString())
+        Writer.write(settingsFile, "Physics", "async num threads", osg.asyncNumThreads.toString())
+
+        Writer.write(settingsFile, "Terrain", "distant terrain", "true")
+        Writer.write(settingsFile, "Terrain", "object paging", "true")
+        Writer.write(settingsFile, "Terrain", "lod factor", format(terrain.lodFactor))
+        Writer.write(settingsFile, "Terrain", "vertex lod mod", terrain.vertexLodMod.toString())
+        Writer.write(settingsFile, "Terrain", "composite map level", terrain.compositeMapLevel.toString())
+        Writer.write(settingsFile, "Terrain", "composite map resolution", terrain.compositeMapResolution.toString())
+        Writer.write(settingsFile, "Terrain", "max composite geometry size", format(terrain.maxCompositeGeometrySize))
+
+        Writer.write(settingsFile, "Shaders", "force shaders", "true")
+        Writer.write(settingsFile, "Shaders", "material quality", shaders.materialQuality)
+        Writer.write(settingsFile, "Shaders", "auto use object normal maps", bool(shaders.objectNormalMaps))
+        Writer.write(settingsFile, "Shaders", "auto use object specular maps", bool(shaders.objectSpecularMaps))
+        Writer.write(settingsFile, "Shaders", "auto use terrain normal maps", bool(shaders.terrainNormalMaps))
+        Writer.write(settingsFile, "Shaders", "auto use terrain specular maps", bool(shaders.terrainSpecularMaps))
+
+        Writer.write(settingsFile, "Shaders", "lighting method", "shaders compatibility")
+        Writer.write(settingsFile, "Shaders", "force per pixel lighting", bool(lighting.perPixelLighting))
+        Writer.write(settingsFile, "Shaders", "max lights", lighting.maxLights.toString())
+        Writer.write(settingsFile, "Shaders", "maximum light distance", lighting.maximumLightDistance.toString())
+        Writer.write(settingsFile, "Shaders", "light bounds multiplier", format(lighting.lightBoundsMultiplier))
+        Writer.write(settingsFile, "Shaders", "light fade start", format(lighting.lightFadeStart))
+
+        val safeShadowResolution = shadows.shadowMapResolution.coerceAtMost(1024)
+        val safeShadowDistance = shadows.maximumShadowMapDistance.coerceAtMost(8192)
+        Writer.write(settingsFile, "Shadows", "enable shadows", bool(shadows.enabled))
+        Writer.write(settingsFile, "Shadows", "actor shadows", bool(shadows.actorShadows))
+        Writer.write(settingsFile, "Shadows", "player shadows", bool(shadows.playerShadows))
+        Writer.write(settingsFile, "Shadows", "object shadows", bool(shadows.objectShadows))
+        Writer.write(settingsFile, "Shadows", "terrain shadows", bool(shadows.terrainShadows))
+        Writer.write(settingsFile, "Shadows", "enable indoor shadows", bool(shadows.indoorShadows))
+        Writer.write(settingsFile, "Shadows", "number of shadow maps", shadows.numberOfShadowMaps.toString())
+        Writer.write(settingsFile, "Shadows", "shadow map resolution", safeShadowResolution.toString())
+        Writer.write(settingsFile, "Shadows", "maximum shadow map distance", safeShadowDistance.toString())
+        Writer.write(settingsFile, "Shadows", "enhanced filtering", "true")
+        Writer.write(settingsFile, "Shadows", "filter softness", format(shadows.filterSoftness))
+        Writer.write(settingsFile, "Shadows", "adaptive softness", "true")
+
+        Writer.write(settingsFile, "Groundcover", "enabled", bool(grass.enabled))
+        Writer.write(settingsFile, "Groundcover", "density", format(grass.density))
+        Writer.write(settingsFile, "Groundcover", "rendering distance", format(grass.renderingDistance))
+        Writer.write(settingsFile, "Groundcover", "min chunk size", format(grass.minChunkSize))
+
+        prefs.edit().putBoolean(PREF_DIRTY, false).apply()
     }
 
-    fun lighting(level: String): LightingProfile = when (normalizeLevel(level)) {
-        "low" -> LightingProfile(false, 8, false, true)
-        "high" -> LightingProfile(false, 16, true, true)
-        "ultra" -> LightingProfile(true, 24, true, true)
-        else -> LightingProfile(false, 12, true, true)
-    }
+    private fun bool(value: Boolean) = if (value) "true" else "false"
 
-    fun shadows(level: String): ShadowProfile = when (normalizeLevel(level)) {
-        "low" -> ShadowProfile(false, false, false, false, 256, 0, 0.90f)
-        "high" -> ShadowProfile(true, true, true, false, 1024, 6144, 0.90f)
-        "ultra" -> ShadowProfile(true, true, true, true, 1024, 8192, 0.90f)
-        else -> ShadowProfile(true, true, false, false, 512, 4096, 0.90f)
-    }
-
-    fun grass(level: String): GrassProfile = when (normalizeLevel(level)) {
-        "low" -> GrassProfile(false, 0.45f, 3072, 1.00f)
-        "high" -> GrassProfile(true, 0.80f, 6144, 0.50f)
-        "ultra" -> GrassProfile(true, 0.90f, 8192, 0.25f)
-        else -> GrassProfile(true, 0.65f, 4096, 0.50f)
+    private fun format(value: Float): String {
+        return String.format(Locale.ROOT, "%.2f", value)
     }
 }

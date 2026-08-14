@@ -700,6 +700,48 @@
 	<item>16</item>
     </string-array>
 
+
+    <!-- ================= Graphics profiles V16 ================= -->
+    <string name="graphics_settings_button">Graphics settings</string>
+    <string name="graphics_settings_summary">Low / Medium / High / Ultra profiles</string>
+    <string name="graphics_dialog_title">Graphics settings</string>
+    <string name="graphics_overall_profile">Overall quality (auto-selected on first launch)</string>
+    <string name="graphics_osg_profile">OSG / renderer</string>
+    <string name="graphics_streaming_profile">View distance / preloading</string>
+    <string name="graphics_terrain_profile">Landscape</string>
+    <string name="graphics_shaders_profile">Shader quality</string>
+    <string name="graphics_lighting_profile">Lighting</string>
+    <string name="graphics_shadows_profile">Shadows</string>
+    <string name="graphics_grass_profile">Grass</string>
+    <string name="graphics_level_low">Low</string>
+    <string name="graphics_level_medium">Medium</string>
+    <string name="graphics_level_high">High</string>
+    <string name="graphics_level_ultra">Ultra</string>
+    <string name="graphics_level_custom">Custom</string>
+    <string name="graphics_apply">Apply</string>
+    <string name="graphics_shadow_safety_note">Android safety: shadow maps are capped at 1024 and shadow distance at 8192. Structural shadow changes made in-game are saved safely and take effect after the next game start.</string>
+    <string name="graphics_profile_summary_format">Current: %1$s</string>
+
+    <!-- ================= Graphics preset ================= -->
+    <string name="pref_graphics_preset_category">Graphics</string>
+    <string name="pref_graphics_preset">Graphics preset</string>
+    <string name="pref_graphics_preset_summary">Mobile-safe preset. Texture/splat quality stays intact; performance modes reduce distance, LOD and paging instead.</string>
+
+    <string-array name="pref_graphics_preset_entries">
+        <item>Auto (keep current settings)</item>
+        <item>Quality — medium terrain, full texture quality</item>
+        <item>Balanced — moderate terrain, full texture quality</item>
+        <item>Performance — reduced distance/LOD, full texture quality</item>
+        <item>Battery saver — minimum distance/LOD, full texture quality</item>
+    </string-array>
+    <string-array name="pref_graphics_preset_values">
+        <item>auto</item>
+        <item>quality</item>
+        <item>balanced</item>
+        <item>performance</item>
+        <item>battery</item>
+    </string-array>
+
     <!-- ================= Update/toolbar buttons ================= -->
     <string name="btn_update_desc">Download update</string>
     <string name="btn_globe_desc">Open morrowind.site</string>
@@ -734,40 +776,4 @@
     <string name="update_server_dialog_message">Set the full URL of the update .zip archive. The default is mro1.myarena.site/Nirn/update.zip.</string>
     <string name="update_server_saved">Update server set to:\n%1$s</string>
     <string name="update_server_reset">Reset to default</string>
-
-    <!-- ================= AMW2 mobile graphics dialog V15 ================= -->
-    <string name="pref_graphics_button">Graphics &amp; performance…</string>
-    <string name="pref_graphics_button_summary_default">Automatic mobile graphics profile</string>
-    <string name="pref_graphics_button_summary">Profile: %1$s</string>
-    <string name="pref_graphics_button_summary_auto">Auto profile: %1$s</string>
-    <string name="pref_graphics_dialog_intro">The first launch selects a conservative profile automatically. Change any category to switch the master selector to Custom. Shadow maps are hard-limited to 1024 and shadow distance to 8192.</string>
-    <string name="pref_graphics_master">Overall graphics profile</string>
-    <string name="pref_graphics_auto_detected">Hardware recommendation: %1$s</string>
-        <string name="pref_graphics_level_auto">Auto</string>
-    <string name="pref_graphics_level_custom">Custom</string>
-<string name="pref_graphics_level_low">Low</string>
-    <string name="pref_graphics_level_medium">Medium</string>
-    <string name="pref_graphics_level_high">High</string>
-    <string name="pref_graphics_level_ultra">Ultra</string>
-    <string name="pref_graphics_osg">OSG / renderer</string>
-    <string name="pref_graphics_osg_hint">Threading, database pager and shader-cache load.</string>
-    <string name="pref_graphics_streaming">Distance &amp; preloading</string>
-    <string name="pref_graphics_streaming_hint">View distance, cell preload distance/cache and background threads.</string>
-    <string name="pref_graphics_terrain">Landscape</string>
-    <string name="pref_graphics_terrain_hint">Terrain LOD, composite maps and object paging.</string>
-    <string name="pref_graphics_shaders">Shaders / PBR</string>
-    <string name="pref_graphics_shaders_hint">Material quality, PBR maps and water reflection cost.</string>
-    <string name="pref_graphics_lighting">Lighting</string>
-    <string name="pref_graphics_lighting_hint">Maximum lights, per-pixel lighting and radial fog.</string>
-    <string name="pref_graphics_shadows">Shadows</string>
-    <string name="pref_graphics_shadows_hint">Caster scope, shadow-map size and distance. Engine hard caps: 1024 / 8192.</string>
-    <string name="pref_graphics_grass">Grass</string>
-    <string name="pref_graphics_grass_hint">Groundcover density, rendering distance and chunk size.</string>
-    <string-array name="pref_graphics_master_entries">
-        <item>Auto</item><item>Low</item><item>Medium</item><item>High</item><item>Ultra</item><item>Custom</item>
-    </string-array>
-    <string-array name="pref_graphics_detail_entries">
-        <item>Low</item><item>Medium</item><item>High</item><item>Ultra</item>
-    </string-array>
-
 </resources>

@@ -480,6 +480,41 @@
         <item>ERROR</item>
     </string-array>
 
+
+    <!-- ================= Профили графики V16 ================= -->
+    <string name="graphics_settings_button">Настройки графики</string>
+    <string name="graphics_settings_summary">Профили от низких до ультра</string>
+    <string name="graphics_dialog_title">Настройки графики</string>
+    <string name="graphics_overall_profile">Общее качество (автовыбор при первом запуске)</string>
+    <string name="graphics_osg_profile">OSG / рендер</string>
+    <string name="graphics_streaming_profile">Дальность / предзагрузка</string>
+    <string name="graphics_terrain_profile">Ландшафт</string>
+    <string name="graphics_shaders_profile">Качество шейдеров</string>
+    <string name="graphics_lighting_profile">Освещение</string>
+    <string name="graphics_shadows_profile">Тени</string>
+    <string name="graphics_grass_profile">Трава</string>
+    <string name="graphics_level_low">Низкие</string>
+    <string name="graphics_level_medium">Средние</string>
+    <string name="graphics_level_high">Высокие</string>
+    <string name="graphics_level_ultra">Ультра</string>
+    <string name="graphics_level_custom">Пользовательские</string>
+    <string name="graphics_apply">Применить</string>
+    <string name="graphics_shadow_safety_note">Безопасный предел Android: карта теней не выше 1024, дальность теней не выше 8192. Структурные изменения теней из меню игры безопасно сохраняются и вступают в силу после следующего запуска игры.</string>
+    <string name="graphics_profile_summary_format">Сейчас: %1$s</string>
+
+    <!-- ================= Графика ================= -->
+    <string name="pref_graphics_preset_category">Графика</string>
+    <string name="pref_graphics_preset">Пресет графики</string>
+    <string name="pref_graphics_preset_summary">Мобильные пресеты без ухудшения текстур и сплешей: производительность регулируется дальностью, LOD и paging.</string>
+
+    <string-array name="pref_graphics_preset_entries">
+        <item>Авто (сохранить текущие настройки)</item>
+        <item>Качество — средний ландшафт, полное качество текстур</item>
+        <item>Баланс — умеренный ландшафт, полное качество текстур</item>
+        <item>Производительность — сниженные дальность/LOD, полное качество текстур</item>
+        <item>Энергосбережение — минимум дальности/LOD, полное качество текстур</item>
+    </string-array>
+
     <!-- ================= Кнопки обновления ================= -->
     <string name="btn_update_desc">Скачать обновление</string>
     <string name="btn_globe_desc">Открыть morrowind.site</string>
@@ -513,40 +548,4 @@
     <string name="update_server_dialog_message">Укажите полный URL до .zip-архива обновления. По умолчанию: mro1.myarena.site/Nirn/update.zip.</string>
     <string name="update_server_saved">Сервер обновлений:\n%1$s</string>
     <string name="update_server_reset">Сбросить к умолчанию</string>
-
-    <!-- ================= AMW2 мобильная графика V15 ================= -->
-    <string name="pref_graphics_button">Графика и производительность…</string>
-    <string name="pref_graphics_button_summary_default">Автоматический мобильный профиль</string>
-    <string name="pref_graphics_button_summary">Профиль: %1$s</string>
-    <string name="pref_graphics_button_summary_auto">Авто-профиль: %1$s</string>
-    <string name="pref_graphics_dialog_intro">При первом запуске лаунчер автоматически выбирает безопасный профиль. Изменение любой отдельной категории переводит общий профиль в «Пользовательский». Карта теней жёстко ограничена 1024, дальность теней — 8192.</string>
-    <string name="pref_graphics_master">Общий профиль графики</string>
-    <string name="pref_graphics_auto_detected">Рекомендация для устройства: %1$s</string>
-        <string name="pref_graphics_level_auto">Авто</string>
-    <string name="pref_graphics_level_custom">Пользовательский</string>
-<string name="pref_graphics_level_low">Низкое</string>
-    <string name="pref_graphics_level_medium">Среднее</string>
-    <string name="pref_graphics_level_high">Высокое</string>
-    <string name="pref_graphics_level_ultra">Ультра</string>
-    <string name="pref_graphics_osg">OSG / рендерер</string>
-    <string name="pref_graphics_osg_hint">Потоки рендера, database pager и кэш шейдеров.</string>
-    <string name="pref_graphics_streaming">Дальность и предзагрузка</string>
-    <string name="pref_graphics_streaming_hint">Дальность прорисовки, preload клеток, кэш и фоновые потоки.</string>
-    <string name="pref_graphics_terrain">Ландшафт</string>
-    <string name="pref_graphics_terrain_hint">LOD ландшафта, composite maps и object paging.</string>
-    <string name="pref_graphics_shaders">Шейдеры / PBR</string>
-    <string name="pref_graphics_shaders_hint">Качество материалов, PBR-карты и стоимость отражений воды.</string>
-    <string name="pref_graphics_lighting">Освещение</string>
-    <string name="pref_graphics_lighting_hint">Количество источников, per-pixel lighting и radial fog.</string>
-    <string name="pref_graphics_shadows">Тени</string>
-    <string name="pref_graphics_shadows_hint">Объекты, размер карты и дальность. Жёсткие лимиты движка: 1024 / 8192.</string>
-    <string name="pref_graphics_grass">Трава</string>
-    <string name="pref_graphics_grass_hint">Плотность groundcover, дальность и размер чанков.</string>
-    <string-array name="pref_graphics_master_entries">
-        <item>Авто</item><item>Низкое</item><item>Среднее</item><item>Высокое</item><item>Ультра</item><item>Пользовательский</item>
-    </string-array>
-    <string-array name="pref_graphics_detail_entries">
-        <item>Низкое</item><item>Среднее</item><item>Высокое</item><item>Ультра</item>
-    </string-array>
-
 </resources>

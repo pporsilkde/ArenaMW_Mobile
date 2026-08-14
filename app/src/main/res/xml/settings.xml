@@ -3,7 +3,7 @@
 	<PreferenceCategory android:title="@string/general_settings" android:key="general_settings">
 		<Preference android:title="@string/game_files" android:key="game_files" />
 		<Preference android:title="@string/mods" android:key="pref_mods" />
-		<Preference android:title="@string/pref_graphics_button" android:key="pref_graphics_dialog" android:summary="@string/pref_graphics_button_summary_default" />
+		<Preference android:title="@string/graphics_settings_button" android:key="pref_graphics_settings" android:summary="@string/graphics_settings_summary" />
 	</PreferenceCategory>
 	<PreferenceCategory android:title="@string/pref_ui">
 		<ListPreference android:entries="@array/pref_encoding_entries" android:title="@string/pref_encoding" android:key="pref_encoding" android:summary="%s" android:defaultValue="@string/pref_encoding_default" android:dialogTitle="@string/pref_encoding" android:entryValues="@array/pref_encoding_values" />
