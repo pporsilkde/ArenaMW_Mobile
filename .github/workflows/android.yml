@@ -198,7 +198,6 @@ jobs:
             exit 1
           fi
 
-          PATCH_STAMP="$STAMP/arenamw-patch"
           PATCH_HASH_FILE="$STAMP/arenamw-patch-input.sha256"
           CURRENT_PATCH_HASH="$(
             {
@@ -213,16 +212,16 @@ jobs:
           echo "==> Current patch fingerprint: $CURRENT_PATCH_HASH"
           echo "==> Cached patch fingerprint: ${CACHED_PATCH_HASH:-<none>}"
 
-          if [[ "$LOCAL_SHA" == "$REMOTE_SHA" && -f "$PATCH_STAMP" && "$CACHED_PATCH_HASH" == "$CURRENT_PATCH_HASH" ]]; then
-            echo '==> ArenaMW source and patch set are unchanged; preserving source/object mtimes for a true incremental build'
+          if [[ "$LOCAL_SHA" == "$REMOTE_SHA" && "$CACHED_PATCH_HASH" == "$CURRENT_PATCH_HASH" ]]; then
+            echo '==> ArenaMW source and pre-configure patch set are unchanged; preserving source/object mtimes for a true incremental build'
             exit 0
           fi
 
           echo '==> ArenaMW source or patch set changed; resetting only the patched checkout and ExternalProject stamps'
           # Android compatibility patches leave the checkout dirty by design. Revert
-          # them before moving to the new upstream commit, then let ExternalProject
-          # apply the numbered patch chain again. The binary directory is preserved,
-          # so only source files touched by the new base/patches are recompiled.
+          # them before moving to the new upstream commit. The ArenaMW ExternalProject
+          # applies the numbered series again as its mandatory pre-configure command.
+          # The binary directory is preserved, so only affected sources are rebuilt.
           git -C "$SRC" reset --hard HEAD
           git -C "$SRC" clean -fdx
           if [[ "$LOCAL_SHA" != "$REMOTE_SHA" ]]; then
@@ -232,12 +231,16 @@ jobs:
 
           rm -f \
             "$STAMP/arenamw-patch" \
+            "$STAMP/arenamw-patch_disconnected" \
             "$STAMP/arenamw-configure" \
             "$STAMP/arenamw-build" \
             "$STAMP/arenamw-install" \
             "$STAMP/arenamw-done"
           mkdir -p "$STAMP"
-          printf '%s\n' "$CURRENT_PATCH_HASH" > "$PATCH_HASH_FILE"
+          # Do not record CURRENT_PATCH_HASH here. It is committed only after the
+          # native target succeeds, proving that pre-configure patching (including
+          # the pinned MOC sse2neon header) really reached the compiled tree.
+          rm -f "$PATCH_HASH_FILE"
 
       - name: Ensure linker safety swap
         shell: bash
@@ -284,29 +287,39 @@ jobs:
         working-directory: buildscripts
         run: bash ./build.sh --arch arm64 --ccache --release --client-only
 
-      # On the very first (uncached) checkout the source tree does not exist during
-      # the update step above. Record the patch fingerprint after ExternalProject has
-      # cloned/applied patches. Do this even after a later compile failure as long as
-      # the patch stamp exists; the next run can then reuse all successful objects.
-      - name: Record applied ArenaMW patch fingerprint
-        if: always()
+      # PATCH_COMMAND is intentionally disabled for ArenaMW because restored
+      # ExternalProject state may skip that stage. The complete mobile series is
+      # applied as the first CONFIGURE_COMMAND instead. Record the fingerprint only
+      # after libopenmw.so was built successfully, and verify that the legacy-Clang
+      # compatible MOC header is the one that actually reached the source tree.
+      - name: Record verified ArenaMW patch fingerprint
         shell: bash
         run: |
           set -euo pipefail
           STAMP="buildscripts/build/arm64/arenamw-prefix/src/arenamw-stamp"
-          PATCH_STAMP="$STAMP/arenamw-patch"
-          if [[ ! -f "$PATCH_STAMP" ]]; then
-            echo '==> Patch stage did not complete; leaving fingerprint unset so the next run resets/retries it'
-            exit 0
+          SRC="buildscripts/build/arm64/arenamw-prefix/src/arenamw"
+          BIN="buildscripts/build/arm64/arenamw-prefix/src/arenamw-build/libopenmw.so"
+          MOC_HEADER="$SRC/extern/maskedoc/sse2neon.h"
+
+          [[ -s "$BIN" ]] || { echo 'libopenmw.so is missing; refusing to record patch fingerprint' >&2; exit 1; }
+          [[ -s "$MOC_HEADER" ]] || { echo 'MOC sse2neon.h is missing after native build' >&2; exit 1; }
+          if grep -q 'Clang versions earlier than 11 are not supported' "$MOC_HEADER"; then
+            echo 'Modern sse2neon header reached the NDK r21e build tree; compatibility install did not run' >&2
+            exit 1
           fi
+          grep -q 'SSE2NEON_PRECISE_MINMAX' "$MOC_HEADER"
+          grep -q '_mm_dp_ps' "$MOC_HEADER"
+          echo "==> Verified MOC compatibility header: $(sha256sum "$MOC_HEADER" | awk '{print $1}')"
+
           CURRENT_PATCH_HASH="$(
             {
               sha256sum buildscripts/CMakeLists.txt
               find buildscripts/patches/openmw -maxdepth 1 -type f -print0 | sort -z | xargs -0 sha256sum
             } | sha256sum | awk '{print $1}'
           )"
+          mkdir -p "$STAMP"
           printf '%s\n' "$CURRENT_PATCH_HASH" > "$STAMP/arenamw-patch-input.sha256"
-          echo "==> Recorded patch fingerprint: $CURRENT_PATCH_HASH"
+          echo "==> Recorded verified patch fingerprint: $CURRENT_PATCH_HASH"
 
       # GitHub cache entries are immutable, therefore every run writes a new key
       # and the next run restores the newest compatible prefix via restore-keys.

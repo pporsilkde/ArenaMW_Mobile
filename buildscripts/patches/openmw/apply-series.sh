@@ -16,7 +16,7 @@ patches=(
   09-amw2-gles-shadow-matrix.patch
   10-amw2-mobile-tuning.patch
   11-amw2-shadow-runtime-safe.patch
-  12-amw2-android-disable-moc-ndkr21e.patch
+  12-amw2-android-moc-ndkr21e.patch
   13-amw2-android-gamma.patch
 )
 
@@ -37,6 +37,18 @@ for patch_name in "${patches[@]}"; do
   git -C "$SRC" apply --check --whitespace=nowarn "$patch_file"
   git -C "$SRC" apply --whitespace=nowarn "$patch_file"
 done
+
+# Keep MaskedOcclusionCulling enabled on the legacy NDK r21e toolchain. AMW2
+# currently bundles a newer sse2neon that rejects Clang 9; install the pinned
+# v1.6.0 translation header only inside the ExternalProject checkout.
+"$HERE/prepare-sse2neon-v1.6.0.sh" "$SRC"
+
+MOC_HEADER="$SRC/extern/maskedoc/sse2neon.h"
+if grep -q 'Clang versions earlier than 11 are not supported' "$MOC_HEADER"; then
+  echo 'MOC compatibility validation failed: modern Clang>=11 guard is still present' >&2
+  exit 20
+fi
+echo "==> MOC compatibility header verified before ArenaMW configure: $(sha256sum "$MOC_HEADER" | awk '{print $1}')"
 
 # Android entry point belongs to the mobile builder rather than the desktop AMW2
 # repository, so keep it as one explicit builder-owned file.

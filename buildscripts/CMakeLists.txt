@@ -518,9 +518,15 @@ ExternalProject_Add(arenamw
 	UPDATE_DISCONNECTED TRUE
 	DOWNLOAD_DIR ${download_dir}
 
-	PATCH_COMMAND ${ARENAMW_PATCH}
+	# Do not rely on ExternalProject's patch stamp for the cached ArenaMW checkout.
+	# CMake may legitimately skip PATCH_COMMAND after a cache restore/source update.
+	# Apply the complete AMW2 Android series immediately before every configure that
+	# ExternalProject decides is necessary. apply-series.sh resets the checkout to
+	# HEAD first, so this is deterministic and safe on both fresh and cached trees.
+	PATCH_COMMAND ""
 
-	CONFIGURE_COMMAND ${wrapper_command} cmake <SOURCE_DIR>
+	CONFIGURE_COMMAND ${ARENAMW_PATCH}
+	COMMAND ${wrapper_command} cmake <SOURCE_DIR>
 	${COMMON_CMAKE_ARGS}
 	${OPENMW_COMMON}
 

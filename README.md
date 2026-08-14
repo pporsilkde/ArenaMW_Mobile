@@ -1,3 +1,12 @@
+# V15.3 MOC cache/pre-configure fix
+
+V15.3 переносит AMW2 build-time patch series из ненадёжного ExternalProject `PATCH_COMMAND` в обязательный pre-configure command. Это гарантирует установку совместимого `sse2neon v1.6.0` до сборки MaskedOcclusionCulling на NDK r21e даже после восстановления incremental cache. Подробности: `V15_3_MOC_PRECONFIGURE_FIX_RU.md`.
+
+
+## V15.2 MOC / NDK r21e
+
+MaskedOcclusionCulling on Android ARM64 is enabled again. The build-time pipeline pins sse2neon v1.6.0 for the legacy r21e/Clang 9 MOC translation path; no pre-patched AMW source is stored. See `V15_2_MOC_R21E_RU.md`.
+
 
 ## AMW2 Android patch pipeline V15
 
