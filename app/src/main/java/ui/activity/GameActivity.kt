@@ -101,38 +101,38 @@ class GameActivity : SDLActivity() {
             Os.setenv("OSG_COP_VALUE", "0x00000100", true)
             Os.setenv("OSG_NOTIFY_LEVEL", "WARN", true)
 
-            // ── OSG Threading из preset ───────────────────────────────────────
-            val preset = GraphicsPresets.resolve(prefs!!)
-            Os.setenv("OSG_MAX_PAGEDLOD", preset.maxPagedLOD.toString(), true)
-            Os.setenv("OSG_THREADING", preset.osgThreading, true)
-            Os.setenv("OSG_NUM_DATABASE_THREADS", preset.dbThreads.toString(), true)
-            Os.setenv("OSG_NUM_COMPILE_THREADS", preset.compileThreads.toString(), true)
-            Os.setenv("OSG_DATABASE_PAGER_THREADS", preset.pagerThreads.toString(), true)
-            Os.setenv("OSG_SHADER_CACHE_ENABLED", if (preset.shaderCache) "1" else "0", true)
+            // ── OSG Threading из отдельного профиля OSG ─────────────────────
+            val osgPreset = GraphicsPresets.getOsgPreset(prefs!!)
+            Os.setenv("OSG_MAX_PAGEDLOD", osgPreset.maxPagedLOD.toString(), true)
+            Os.setenv("OSG_THREADING", osgPreset.osgThreading, true)
+            Os.setenv("OSG_NUM_DATABASE_THREADS", osgPreset.dbThreads.toString(), true)
+            Os.setenv("OSG_NUM_COMPILE_THREADS", osgPreset.compileThreads.toString(), true)
+            Os.setenv("OSG_DATABASE_PAGER_THREADS", osgPreset.pagerThreads.toString(), true)
+            Os.setenv("OSG_SHADER_CACHE_ENABLED", "1", true)
 
             // ── NG-GL4ES специфичные переменные ──────────────────────────────
             // Keep the known-working simple converter for the general ArenaMW 0.47 renderer.
-            // Complex water V3 is adapted at shader-source level instead of globally forcing
-            // the unstable advanced converter that previously produced a purple frame/crash.
+            // V17 keeps the stable simple/legacy shader water and never selects the
+            // retired PBR/New water path that previously produced purple frames/crashes.
             Os.setenv("LIBGL_SIMPLE_SHADERCONV", "1", true)
             // Instancing через SPIRV
             Os.setenv("LIBGL_INSTANCING", "1", true)
-            // Match the newer OpenMW-Android builder: keep FBO attachments on the
-            // normal texture-backed path instead of forcing GL4ES FBO textures.
-            Os.setenv("LIBGL_FBOFORCETEX", "0", true)
             // DXT mipmaps через NG-GL4ES
             Os.setenv("LIBGL_DXTMIPMAP", "1", true)
             // Текстуры
             Os.setenv("LIBGL_AVOID16BITS", "1", true)
-            // Avoid per-frame GL4ES diagnostic overhead in normal play while
-            // preserving shader compile/link errors. DEBUG/VERBOSE can re-enable it.
-            val debugLevel = prefs!!.getString("pref_debug_level", "WARNING") ?: "WARNING"
-            Os.setenv("LIBGL_LOG", if (debugLevel == "DEBUG" || debugLevel == "VERBOSE") "1" else "0", true)
+            // Лог только в debug
+            // Keep Android graphics diagnostics enabled even in release CI builds until
+            // the GLES shader path is stable. This avoids another "empty log" crash.
+            Os.setenv("LIBGL_LOG", "1", true)
+            // Keep shader compiler/linker failures visible without dumping every converted shader.
             Os.setenv("LIBGL_LOGSHADERERROR", "1", true)
             Os.setenv("OPENMW_DISABLE_LOGS", "0", true)
 
-            // Deliberately do not use LIBGL_SHRINK. Runtime texture shrinking adds
-            // conversion work and is not a safe camera-stutter optimization.
+            // Never use GL4ES texture shrink for graphics presets. It destroys
+            // terrain splat/material clarity, especially in Battery Saver.
+            // Performance presets reduce LOD/distance/threading instead.
+            Os.setenv("LIBGL_SHRINK", "0", true)
 
         } catch (e: ErrnoException) {
             Log.e("OpenMW", "Failed setting NG-GL4ES environment variables.")

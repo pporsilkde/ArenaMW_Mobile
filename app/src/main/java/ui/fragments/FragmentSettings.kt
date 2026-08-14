@@ -28,9 +28,14 @@ import android.content.SharedPreferences
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.graphics.drawable.ColorDrawable
+import android.graphics.Typeface
 import android.view.View
-import android.widget.ListView
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.LinearLayout
+import android.widget.ScrollView
+import android.widget.Spinner
+import android.widget.TextView
 import android.preference.EditTextPreference
 import android.preference.Preference
 import android.preference.PreferenceFragment
@@ -40,11 +45,12 @@ import androidx.core.content.ContextCompat
 import com.codekidlabs.storagechooser.StorageChooser
 import com.libopenmw.openmw.R
 import file.GameInstaller
+import file.GraphicsPresets
+import file.BuildManifestManager
 
 import ui.activity.ConfigureControls
 import ui.activity.MainActivity
 import ui.activity.ModsActivity
-import ui.activity.GraphicsSettingsActivity
 import utils.MyApp
 import java.util.*
 
@@ -71,8 +77,7 @@ class FragmentSettings : PreferenceFragment(), OnSharedPreferenceChangeListener 
         }
 
         findPreference("pref_graphics_settings").setOnPreferenceClickListener {
-            val intent = Intent(activity, GraphicsSettingsActivity::class.java)
-            this.startActivity(intent)
+            showGraphicsSettingsDialog()
             true
         }
 
@@ -97,20 +102,207 @@ class FragmentSettings : PreferenceFragment(), OnSharedPreferenceChangeListener 
         }
     }
 
+    private fun dp(value: Int): Int {
+        return (value * resources.displayMetrics.density + 0.5f).toInt()
+    }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        // Make legacy PreferenceFragment readable on AMOLED: distinct rows and
-        // breathing room instead of one continuous dark block.
-        val list = view.findViewById<ListView>(android.R.id.list) ?: return
-        val density = resources.displayMetrics.density
-        list.setPadding((10 * density).toInt(), (6 * density).toInt(),
-            (10 * density).toInt(), (84 * density).toInt())
-        list.clipToPadding = false
-        list.divider = ColorDrawable(ContextCompat.getColor(activity, R.color.bgDivider))
-        list.dividerHeight = (1 * density).toInt().coerceAtLeast(1)
-        list.setSelector(android.R.color.transparent)
-        list.setBackgroundColor(ContextCompat.getColor(activity, R.color.bgPrimary))
+    private fun graphicsLevelLabels(): Array<String> = arrayOf(
+        getString(R.string.graphics_level_low),
+        getString(R.string.graphics_level_medium),
+        getString(R.string.graphics_level_high),
+        getString(R.string.graphics_level_ultra)
+    )
+
+    private fun overallLabels(): Array<String> = arrayOf(
+        getString(R.string.graphics_level_low),
+        getString(R.string.graphics_level_medium),
+        getString(R.string.graphics_level_high),
+        getString(R.string.graphics_level_ultra),
+        getString(R.string.graphics_level_custom)
+    )
+
+    private fun overallValues(): Array<String> = arrayOf(
+        GraphicsPresets.LOW,
+        GraphicsPresets.MEDIUM,
+        GraphicsPresets.HIGH,
+        GraphicsPresets.ULTRA,
+        GraphicsPresets.CUSTOM
+    )
+
+    private fun levelLabel(level: String): String {
+        return when (level) {
+            GraphicsPresets.LOW -> getString(R.string.graphics_level_low)
+            GraphicsPresets.HIGH -> getString(R.string.graphics_level_high)
+            GraphicsPresets.ULTRA -> getString(R.string.graphics_level_ultra)
+            GraphicsPresets.CUSTOM -> getString(R.string.graphics_level_custom)
+            else -> getString(R.string.graphics_level_medium)
+        }
+    }
+
+    private fun updateGraphicsPreferenceSummary() {
+        val pref = findPreference("pref_graphics_settings") ?: return
+        val shared = preferenceScreen.sharedPreferences
+        GraphicsPresets.ensureInitialized(activity, shared)
+        val overall = GraphicsPresets.normalizeOverall(
+            shared.getString(GraphicsPresets.PREF_OVERALL, GraphicsPresets.MEDIUM)
+        )
+        pref.summary = getString(R.string.graphics_profile_summary_format, levelLabel(overall))
+    }
+
+    private fun showGraphicsSettingsDialog() {
+        val shared = preferenceScreen.sharedPreferences
+        GraphicsPresets.ensureInitialized(activity, shared)
+
+        val root = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(10), dp(20), dp(8))
+        }
+        val scroll = ScrollView(activity).apply { addView(root) }
+
+        fun addSelector(titleRes: Int, labels: Array<String>): Spinner {
+            val title = TextView(activity).apply {
+                setText(titleRes)
+                textSize = 14f
+                setPadding(0, dp(10), 0, dp(4))
+            }
+            root.addView(title, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ))
+
+            val spinner = Spinner(activity)
+            val adapter = ArrayAdapter(activity, android.R.layout.simple_spinner_item, labels)
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            spinner.adapter = adapter
+            root.addView(spinner, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ))
+            return spinner
+        }
+
+        val overallTitle = TextView(activity).apply {
+            setText(R.string.graphics_overall_profile)
+            setTypeface(typeface, Typeface.BOLD)
+            textSize = 15f
+            setPadding(0, dp(6), 0, dp(4))
+        }
+        root.addView(overallTitle)
+
+        val overallSpinner = Spinner(activity)
+        val overallAdapter = ArrayAdapter(activity, android.R.layout.simple_spinner_item, overallLabels())
+        overallAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        overallSpinner.adapter = overallAdapter
+        root.addView(overallSpinner, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        ))
+
+        val levelLabels = graphicsLevelLabels()
+        val osgSpinner = addSelector(R.string.graphics_osg_profile, levelLabels)
+        val streamingSpinner = addSelector(R.string.graphics_streaming_profile, levelLabels)
+        val terrainSpinner = addSelector(R.string.graphics_terrain_profile, levelLabels)
+        val shadersSpinner = addSelector(R.string.graphics_shaders_profile, levelLabels)
+        val lightingSpinner = addSelector(R.string.graphics_lighting_profile, levelLabels)
+        val shadowsSpinner = addSelector(R.string.graphics_shadows_profile, levelLabels)
+        val grassSpinner = addSelector(R.string.graphics_grass_profile, levelLabels)
+
+        val note = TextView(activity).apply {
+            setText(R.string.graphics_shadow_safety_note)
+            textSize = 12f
+            setPadding(0, dp(16), 0, dp(8))
+        }
+        root.addView(note)
+
+        val groupSpinners = arrayOf(
+            osgSpinner, streamingSpinner, terrainSpinner, shadersSpinner,
+            lightingSpinner, shadowsSpinner, grassSpinner
+        )
+        val groupKeys = arrayOf(
+            GraphicsPresets.PREF_OSG,
+            GraphicsPresets.PREF_STREAMING,
+            GraphicsPresets.PREF_TERRAIN,
+            GraphicsPresets.PREF_SHADERS,
+            GraphicsPresets.PREF_LIGHTING,
+            GraphicsPresets.PREF_SHADOWS,
+            GraphicsPresets.PREF_GRASS
+        )
+
+        fun levelPosition(value: String): Int {
+            val index = GraphicsPresets.LEVELS.indexOf(value)
+            return if (index >= 0) index else 1
+        }
+
+        val currentOverall = GraphicsPresets.normalizeOverall(
+            shared.getString(GraphicsPresets.PREF_OVERALL, GraphicsPresets.MEDIUM)
+        )
+        val overallIndex = overallValues().indexOf(currentOverall).let { if (it >= 0) it else 1 }
+        overallSpinner.setSelection(overallIndex)
+        for (i in groupSpinners.indices) {
+            groupSpinners[i].setSelection(levelPosition(GraphicsPresets.getLevel(shared, groupKeys[i])))
+        }
+
+        overallSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                val value = overallValues()[position]
+                if (value == GraphicsPresets.CUSTOM)
+                    return
+                val levelPos = levelPosition(value)
+                for (spinner in groupSpinners)
+                    if (spinner.selectedItemPosition != levelPos)
+                        spinner.setSelection(levelPos)
+            }
+        }
+
+        for (spinner in groupSpinners) {
+            spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                override fun onNothingSelected(parent: AdapterView<*>?) {}
+
+                override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                    val overallPos = overallSpinner.selectedItemPosition
+                    if (overallPos < 0)
+                        return
+                    val overallValue = overallValues()[overallPos]
+                    if (overallValue != GraphicsPresets.CUSTOM && position != levelPosition(overallValue)) {
+                        overallSpinner.setSelection(overallValues().indexOf(GraphicsPresets.CUSTOM))
+                    }
+                }
+            }
+        }
+
+        val dialog = AlertDialog.Builder(activity)
+            .setTitle(R.string.graphics_dialog_title)
+            .setView(scroll)
+            .setNegativeButton(android.R.string.cancel, null)
+            .setPositiveButton(R.string.graphics_apply, null)
+            .create()
+
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val overall = overallValues()[overallSpinner.selectedItemPosition]
+                fun selectedLevel(spinner: Spinner): String {
+                    val pos = spinner.selectedItemPosition.coerceIn(0, GraphicsPresets.LEVELS.size - 1)
+                    return GraphicsPresets.LEVELS[pos]
+                }
+
+                GraphicsPresets.saveSelection(
+                    shared,
+                    overall,
+                    selectedLevel(osgSpinner),
+                    selectedLevel(streamingSpinner),
+                    selectedLevel(terrainSpinner),
+                    selectedLevel(shadersSpinner),
+                    selectedLevel(lightingSpinner),
+                    selectedLevel(shadowsSpinner),
+                    selectedLevel(grassSpinner)
+                )
+                updateGraphicsPreferenceSummary()
+                dialog.dismiss()
+            }
+        }
+        dialog.show()
     }
 
     /**
@@ -131,7 +323,14 @@ class FragmentSettings : PreferenceFragment(), OnSharedPreferenceChangeListener 
             if (!inst.convertIni(sharedPref.getString("pref_encoding", GameInstaller.DEFAULT_CHARSET_PREF)!!)) {
                 showError(R.string.data_error_title, R.string.ini_error_message)
             } else {
-                gameFiles = path
+                val root = BuildManifestManager.normalizeGameRoot(path)
+                gameFiles = root.absolutePath
+                val dataDir = BuildManifestManager.dataDirForGamePath(path)
+                if (dataDir.isDirectory) {
+                    // PC launcher semantics: existing build.ini is authoritative;
+                    // otherwise create it once using canonical content order.
+                    BuildManifestManager.initializeIfMissing(activity, dataDir)
+                }
             }
         } else {
             showError(R.string.data_error_title, R.string.data_error_message,
@@ -177,6 +376,7 @@ class FragmentSettings : PreferenceFragment(), OnSharedPreferenceChangeListener 
                 updatePreference(preference, preference.key)
             }
         }
+        updateGraphicsPreferenceSummary()
     }
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String) {
@@ -195,9 +395,11 @@ class FragmentSettings : PreferenceFragment(), OnSharedPreferenceChangeListener 
             else
                 preference.summary = preference.text
         }
-        // Show selected value as a summary for game_files
+        // Keep the Game files row visually aligned with Mods / Graphics settings.
+        // The full selected path made this one preference two lines tall and shifted
+        // its title relative to the neighbouring entries.
         if (key == "game_files") {
-            preference.summary = preference.sharedPreferences.getString("game_files", "")
+            preference.summary = null
         }
     }
 
