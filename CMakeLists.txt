@@ -328,18 +328,11 @@ ExternalProject_Add(NG-GL4ES
 	UPDATE_DISCONNECTED TRUE
 	DOWNLOAD_DIR ${download_dir}
 
-	# Openmw3 vendors SPIRV-Cross. SPIRV-Cross explicitly rejects Makefile
-	# builds where source and binary directories are the same, so NG-GL4ES must
-	# be configured out-of-source. ExternalProject's default <BINARY_DIR> is
-	# NG-GL4ES-prefix/src/NG-GL4ES-build.
+	BUILD_IN_SOURCE 1
 
-	# Openmw3 builds glslang and SPIRV-Cross from pinned submodules with the same
-	# Android NDK. NDK r21e lacks std::regex::multiline and cannot resolve the
-	# pinned glslang std::filesystem::absolute diagnostic call when linking this
-	# shared wrapper. Apply narrow, idempotent source compatibility fixes before
-	# configuring NG-GL4ES; shader semantics are not changed.
-	PATCH_COMMAND python3 ${CMAKE_SOURCE_DIR}/patches/ng-gl4es/fix-openmw3-ndk-r21-regex.py <SOURCE_DIR>
-
+	# Openmw3 builds glslang and SPIRV-Cross from its pinned submodules with the
+	# same Android NDK, so the old prebuilt-glslang std::filesystem ABI stub is
+	# intentionally not injected here.
 	CONFIGURE_COMMAND ${wrapper_command} cmake <SOURCE_DIR>
 	${COMMON_CMAKE_ARGS}
 	-DINCLUDE_SPIRV_TOOLS=OFF
@@ -518,6 +511,7 @@ set(ARENAMW_PATCH
 	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/18-android-world-distance-land-v13-4.patch &&
 	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/19-android-ui-safety-controls-v13-5.patch &&
 	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/20-android-stock-actor-collision-quickloot-use-v13-6.patch &&
+	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/21-android-water-fastpath-v13-7.patch &&
 	cp ${CMAKE_SOURCE_DIR}/patches/openmw/android_main.cpp <SOURCE_DIR>/apps/openmw/android_main.cpp &&
 	sh ${CMAKE_SOURCE_DIR}/patches/openmw/patch-sse2neon.sh <SOURCE_DIR>
 )

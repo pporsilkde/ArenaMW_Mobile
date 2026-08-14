@@ -83,11 +83,6 @@
                     android:background="@drawable/launcher_field_background" />
 
                 <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp" android:text="@string/gfx_preload" android:textColor="@color/textPrimary" />
-                <Spinner android:id="@+id/gfx_preload" android:layout_width="match_parent" android:layout_height="48dp"
-                    android:background="@drawable/launcher_field_background" />
-
-                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
                     android:layout_marginTop="10dp" android:text="@string/gfx_grass" android:textColor="@color/textPrimary" />
                 <Spinner android:id="@+id/gfx_grass" android:layout_width="match_parent" android:layout_height="48dp"
                     android:background="@drawable/launcher_field_background" />

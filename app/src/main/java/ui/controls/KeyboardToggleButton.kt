@@ -1,6 +1,6 @@
 /*
-    Кнопка, совмещающая два режима. Всегда стоит в ЛЕВОМ НИЖНЕМ углу
-    (виртуальные координаты X=0 — как scroll_wheel, Y=650 — как sneak),
+    Кнопка, совмещающая два режима. Стоит в ЛЕВОМ ВЕРХНЕМ углу
+    непосредственно под кнопкой ESC/меню.
     размер — как у обычных osc-кнопок. Между режимами меняется только
     иконка, альфа и наличие пульсации:
 
@@ -49,11 +49,11 @@ private const val VU_H = 768
 
 /**
  * Позиция и размер в POSTPROCESS-режиме (виртуальные единицы).
- * X=0 — как у scroll_wheel, Y=650 — как у sneak/use/jump.
+ * ESC/меню находится в (12, 12), поэтому эта кнопка идёт сразу под ним.
  * Размер = CONTROL_DEFAULT_SIZE (65) — как у обычных osc-кнопок.
  */
-private const val POST_VU_X = 0
-private const val POST_VU_Y = 650
+private const val POST_VU_X = 12
+private const val POST_VU_Y = 90
 private const val POST_VU_SIZE = 65   // == CONTROL_DEFAULT_SIZE
 private const val POST_ALPHA = 0.3f   // как у обычных osc-кнопок
 
@@ -128,9 +128,9 @@ class KeyboardToggleButton(
     }
 
     /**
-     * Обновить LayoutParams: кнопка всегда стоит в левом нижнем углу
-     * (виртуальные координаты POST_VU_X / POST_VU_Y, размер POST_VU_SIZE) —
-     * как у scroll_wheel по X и как у sneak по Y. Различие между режимами —
+     * Обновить LayoutParams: кнопка стоит под верхней левой кнопкой ESC/меню
+     * (виртуальные координаты POST_VU_X / POST_VU_Y, размер POST_VU_SIZE).
+     * Различие между режимами —
      * только иконка/альфа/пульсация, а не позиция.
      */
     private fun updateLayout() {

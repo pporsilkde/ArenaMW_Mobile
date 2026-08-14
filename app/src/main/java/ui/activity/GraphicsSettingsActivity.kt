@@ -17,7 +17,6 @@ class GraphicsSettingsActivity : AppCompatActivity() {
     private lateinit var preset: Spinner
     private lateinit var distance: Spinner
     private lateinit var terrain: Spinner
-    private lateinit var preload: Spinner
     private lateinit var water: Spinner
     private lateinit var shadows: Spinner
     private lateinit var shadowMap: Spinner
@@ -30,7 +29,6 @@ class GraphicsSettingsActivity : AppCompatActivity() {
     private val presetValues = listOf("very_low", "performance", "balanced", "quality", "battery", "custom")
     private val distanceValues = listOf("4096", "5120", "6144", "8192", "12288", "16384", "24576", "32768", "40960")
     private val terrainValues = listOf("very_low", "low", "balanced", "medium")
-    private val preloadValues = listOf("safe")
     private val waterValues = listOf("low", "balanced", "high")
     private val shadowValues = listOf("off", "characters", "objects")
     private val shadowMapValues = listOf("512", "1024")
@@ -46,7 +44,7 @@ class GraphicsSettingsActivity : AppCompatActivity() {
         supportActionBar?.title = getString(R.string.pref_graphics_settings_title)
 
         preset = findViewById(R.id.gfx_preset); distance = findViewById(R.id.gfx_distance)
-        terrain = findViewById(R.id.gfx_terrain); preload = findViewById(R.id.gfx_preload)
+        terrain = findViewById(R.id.gfx_terrain)
         water = findViewById(R.id.gfx_water); shadows = findViewById(R.id.gfx_shadows)
         shadowMap = findViewById(R.id.gfx_shadow_map); shadowDistance = findViewById(R.id.gfx_shadow_distance)
         grass = findViewById(R.id.gfx_grass)
@@ -55,7 +53,6 @@ class GraphicsSettingsActivity : AppCompatActivity() {
         bind(preset, R.array.gfx_preset_entries)
         bind(distance, R.array.gfx_distance_entries)
         bind(terrain, R.array.gfx_terrain_entries)
-        bind(preload, R.array.gfx_preload_entries)
         bind(water, R.array.gfx_water_entries)
         bind(shadows, R.array.gfx_shadow_entries)
         bind(shadowMap, R.array.gfx_shadow_map_entries)
@@ -68,7 +65,6 @@ class GraphicsSettingsActivity : AppCompatActivity() {
         if (value(preset, presetValues) == "custom") {
             select(distance, distanceValues, prefs.getString("pref_gfx_view_distance", "12288") ?: "12288")
             select(terrain, terrainValues, prefs.getString("pref_gfx_terrain", "balanced") ?: "balanced")
-            select(preload, preloadValues, "safe")
             select(water, waterValues, prefs.getString("pref_gfx_water", "balanced") ?: "balanced")
             select(shadows, shadowValues, prefs.getString("pref_gfx_shadows", "characters") ?: "characters")
             select(shadowMap, shadowMapValues, prefs.getString("pref_gfx_shadow_map", "512") ?: "512")
@@ -86,7 +82,7 @@ class GraphicsSettingsActivity : AppCompatActivity() {
                 if (idValue != "custom") loadPreset(idValue)
             }
         }
-        listOf(distance, terrain, preload, water, shadows, shadowMap, shadowDistance, grass, shaders).forEach { spinner ->
+        listOf(distance, terrain, water, shadows, shadowMap, shadowDistance, grass, shaders).forEach { spinner ->
             spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
                 override fun onNothingSelected(parent: AdapterView<*>?) {}
                 override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
@@ -129,7 +125,6 @@ class GraphicsSettingsActivity : AppCompatActivity() {
         select(distance, distanceValues, p.viewingDistance.toString())
         val terrainId = when { p.lodFactor <= .40f -> "very_low"; p.lodFactor <= .50f -> "low"; p.lodFactor >= .80f -> "medium"; else -> "balanced" }
         select(terrain, terrainValues, terrainId)
-        select(preload, preloadValues, "safe")
         select(water, waterValues, when { p.waterMode == "simple" -> "low"; p.waterRtt >= 512 -> "high"; else -> "balanced" })
         select(shadows, shadowValues, p.shadowScope)
         select(shadowMap, shadowMapValues, p.shadowResolution.toString())

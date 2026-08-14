@@ -699,7 +699,7 @@ class Osc {
 
         osk.placeElements(target)
 
-        // Кнопка-тогглер клавиатуры/F12 — поверх всего, в правом верхнем углу.
+        // Кнопка клавиатуры/F11/F12 — поверх всего, под верхней левой кнопкой ESC/меню.
         kbdToggle.placeInto(target)
 
         target.addOnLayoutChangeListener { v, l, t, r, b, ol, ot, or, ob -> relayout(l, t, r, b, ol, ot, or, ob) }
