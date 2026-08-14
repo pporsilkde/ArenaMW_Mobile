@@ -333,12 +333,11 @@ ExternalProject_Add(NG-GL4ES
 	# be configured out-of-source. ExternalProject's default <BINARY_DIR> is
 	# NG-GL4ES-prefix/src/NG-GL4ES-build.
 
-	# Openmw3 builds glslang and SPIRV-Cross from its pinned submodules with the
-	# same Android NDK, so the old prebuilt-glslang std::filesystem ABI stub is
-	# intentionally not injected here.
-	# Its current glsl_for_es.cpp uses std::regex::multiline, which is unavailable
-	# in the libc++ shipped by this builder's NDK r21e. Apply a narrow, idempotent
-	# source compatibility patch before configuring the wrapper.
+	# Openmw3 builds glslang and SPIRV-Cross from pinned submodules with the same
+	# Android NDK. NDK r21e lacks std::regex::multiline and cannot resolve the
+	# pinned glslang std::filesystem::absolute diagnostic call when linking this
+	# shared wrapper. Apply narrow, idempotent source compatibility fixes before
+	# configuring NG-GL4ES; shader semantics are not changed.
 	PATCH_COMMAND python3 ${CMAKE_SOURCE_DIR}/patches/ng-gl4es/fix-openmw3-ndk-r21-regex.py <SOURCE_DIR>
 
 	CONFIGURE_COMMAND ${wrapper_command} cmake <SOURCE_DIR>
