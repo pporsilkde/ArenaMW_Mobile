@@ -118,18 +118,12 @@ class ModsAdapter(private val collection: ModsCollection) : RecyclerView.Adapter
         // Подсветка строки, которую пользователь "поднял" пальцем в drag-&-drop.
         // Берём цвет из палитры темы, а не хардкодим LTGRAY (который поверх
         // AMOLED-чёрного фона смотрелся как яркий серый прямоугольник).
-        val ctx = modViewHolder.rowView.context
-        modViewHolder.rowView.setBackgroundColor(
-            androidx.core.content.ContextCompat.getColor(ctx, R.color.modItemSelectedColor)
-        )
+        modViewHolder.rowView.setBackgroundResource(R.drawable.mod_item_selected_background)
     }
 
     fun onRowClear(modViewHolder: ModViewHolder) {
         // Возврат к обычному фону элемента после drop'а.
-        val ctx = modViewHolder.rowView.context
-        modViewHolder.rowView.setBackgroundColor(
-            androidx.core.content.ContextCompat.getColor(ctx, R.color.modItemBackgroundColor)
-        )
+        modViewHolder.rowView.setBackgroundResource(R.drawable.mod_item_background)
         collection.update()
     }
 }

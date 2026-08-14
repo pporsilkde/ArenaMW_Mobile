@@ -44,31 +44,31 @@ object GraphicsPresets {
         "very_low" to Preset(
             "CullDrawThreadPerContext", 1, 1, 1, 4, true,
             4096, .40f, -2, -3, 1024, true, true,
-            1600, 1, 60, 45.03f, "simple", 256, false, 2,
+            1000, 1, 60, 45.03f, "simple", 256, false, 2,
             "off", 1024, 8192, true, .80f, 7100, "compatibility", "performance"
         ),
         "performance" to Preset(
             "CullDrawThreadPerContext", 1, 1, 1, 5, true,
             8192, .50f, -2, -3, 1024, true, true,
-            1800, 1, 60, 45.0f, "simple", 256, false, 2,
+            1000, 1, 60, 45.0f, "simple", 256, false, 2,
             "off", 512, 4096, true, .65f, 5000, "compatibility", "performance"
         ),
         "balanced" to Preset(
             "CullDrawThreadPerContext", 1, 1, 1, 6, true,
             12288, .65f, -1, -2, 1024, true, true,
-            2400, 1, 60, 60.0f, "new", 256, true, 2,
+            1000, 1, 60, 60.0f, "new", 256, true, 2,
             "characters", 512, 5120, true, .80f, 6000, "compatibility", "performance"
         ),
         "quality" to Preset(
             "CullDrawThreadPerContext", 1, 1, 1, 8, true,
             24576, .80f, -1, -2, 2048, true, true,
-            3000, 1, 60, 60.0f, "new", 512, true, 3,
+            1000, 1, 60, 60.0f, "new", 512, true, 3,
             "objects", 1024, 6144, true, 1.0f, 7100, "standard", "balance"
         ),
         "battery" to Preset(
             "SingleThreaded", 1, 1, 1, 3, true,
             4096, .40f, -2, -3, 1024, true, true,
-            1200, 1, 30, 30.0f, "simple", 256, false, 1,
+            1000, 1, 30, 30.0f, "simple", 256, false, 1,
             "off", 512, 3072, false, .50f, 3500, "compatibility", "balance"
         )
     )
@@ -89,8 +89,9 @@ object GraphicsPresets {
             "medium" -> floatArrayOf(.80f, -1f, -2f, 2048f)
             else -> floatArrayOf(.65f, -1f, -2f, 1024f)
         }
-        val preload = prefs.getString("pref_gfx_preload", "balanced") ?: "balanced"
-        val preloadDistance = when (preload) { "low" -> 1400; "high" -> 3000; else -> 2200 }
+        // ArenaMW Android: keep preload distance conservative on every profile.
+        // Large preload radii caused visible I/O / upload bursts during abrupt camera turns.
+        val preloadDistance = 1000
         val preloadThreads = 1
         val water = prefs.getString("pref_gfx_water", "balanced") ?: "balanced"
         // Low uses the legacy/simple ArenaMW shader. Balanced/High use PBR water.

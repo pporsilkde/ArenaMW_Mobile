@@ -529,7 +529,7 @@ class MainActivity : AppCompatActivity() {
                 // [Cells]
                 file.Writer.write(cfg, "Cells", "preload enabled", boolPref("pref_preloading"))
                 file.Writer.write(cfg, "Cells", "preload num threads", prefs.getString("pref_preload_num_threads", "1")!!)
-                file.Writer.write(cfg, "Cells", "preload distance", prefs.getString("pref_preload_distance", "1000")!!)
+                file.Writer.write(cfg, "Cells", "preload distance", "1000")
                 file.Writer.write(cfg, "Cells", "preload exterior grid", boolPref("pref_preload_exterior_grid"))
                 file.Writer.write(cfg, "Cells", "preload fast travel", boolPref("pref_preload_fast_travel"))
                 file.Writer.write(cfg, "Cells", "preload doors", boolPref("pref_preload_doors"))

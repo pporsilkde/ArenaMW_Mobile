@@ -54,16 +54,25 @@
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/list_mods"
             android:layout_width="match_parent"
+            android:paddingTop="6dp"
+            android:paddingBottom="12dp"
+            android:clipToPadding="false"
             android:layout_height="match_parent" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/list_resources"
             android:layout_width="match_parent"
+            android:paddingTop="6dp"
+            android:paddingBottom="12dp"
+            android:clipToPadding="false"
             android:layout_height="match_parent" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/list_groundcovers"
             android:layout_width="match_parent"
+            android:paddingTop="6dp"
+            android:paddingBottom="12dp"
+            android:clipToPadding="false"
             android:layout_height="match_parent" />
     </ViewFlipper>
 

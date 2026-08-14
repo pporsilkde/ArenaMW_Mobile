@@ -542,14 +542,10 @@
     <string name="pref_preload_distance">Preload distance</string>
     <string name="pref_preload_distance_default">1000</string>
     <string-array name="pref_preload_distance_entries">
-	<item>Very high</item>
-	<item>High</item>
-	<item>Normal</item>
+        <item>Fixed safe distance — 1000</item>
     </string-array>
     <string-array name="pref_preload_distance_values">
-	<item>5000</item>
-	<item>3000</item>
-	<item>1000</item>
+        <item>1000</item>
     </string-array>
     <string name="pref_object_paging_merge_factor">Object paging merge factor</string>
     <string name="pref_object_paging_merge_factor_default">3000</string>
@@ -789,11 +785,13 @@
     <string-array name="gfx_preset_entries"><item>Very Low — reference profile</item><item>Performance</item><item>Balanced</item><item>Quality</item><item>Battery saver</item><item>Custom</item></string-array>
     <string-array name="gfx_distance_entries"><item>4096</item><item>5120</item><item>6144</item><item>8192</item><item>12288</item><item>16384</item><item>24576</item><item>32768</item><item>40960</item></string-array>
     <string-array name="gfx_terrain_entries"><item>Very Low</item><item>Low</item><item>Balanced</item><item>Medium (maximum mobile)</item></string-array>
-    <string-array name="gfx_preload_entries"><item>Low / 1 worker</item><item>Balanced / 1 worker</item><item>High distance / 1 worker</item></string-array>
+    <string-array name="gfx_preload_entries"><item>Fixed safe distance — 1000 / 1 worker</item></string-array>
     <string-array name="gfx_water_entries"><item>Simple water — 256, no refraction</item><item>PBR water — balanced, 256</item><item>PBR water — quality, 512</item></string-array>
     <string-array name="gfx_shadow_entries"><item>Off</item><item>Player + actors</item><item>Player + actors + objects</item></string-array>
     <string-array name="gfx_shadow_map_entries"><item>512</item><item>1024 (maximum mobile)</item></string-array><string-array name="gfx_shadow_distance_entries"><item>1024</item><item>2048</item><item>4096</item><item>6144</item><item>8192 (maximum)</item></string-array>
     <string-array name="gfx_grass_entries"><item>Off</item><item>Low</item><item>Balanced</item><item>High</item></string-array>
     <string-array name="gfx_shader_entries"><item>Compatibility (recommended)</item><item>Standard normal/spec maps</item></string-array>
 
+    <string name="gfx_scene_section">World and streaming</string>
+    <string name="gfx_render_section">Rendering</string>
 </resources>

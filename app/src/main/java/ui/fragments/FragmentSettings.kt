@@ -28,6 +28,9 @@ import android.content.SharedPreferences
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.graphics.drawable.ColorDrawable
+import android.view.View
+import android.widget.ListView
 import android.preference.EditTextPreference
 import android.preference.Preference
 import android.preference.PreferenceFragment
@@ -92,6 +95,22 @@ class FragmentSettings : PreferenceFragment(), OnSharedPreferenceChangeListener 
             }
             true
         }
+    }
+
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        // Make legacy PreferenceFragment readable on AMOLED: distinct rows and
+        // breathing room instead of one continuous dark block.
+        val list = view.findViewById<ListView>(android.R.id.list) ?: return
+        val density = resources.displayMetrics.density
+        list.setPadding((10 * density).toInt(), (6 * density).toInt(),
+            (10 * density).toInt(), (84 * density).toInt())
+        list.clipToPadding = false
+        list.divider = ColorDrawable(ContextCompat.getColor(activity, R.color.bgDivider))
+        list.dividerHeight = (1 * density).toInt().coerceAtLeast(1)
+        list.setSelector(android.R.color.transparent)
+        list.setBackgroundColor(ContextCompat.getColor(activity, R.color.bgPrimary))
     }
 
     /**

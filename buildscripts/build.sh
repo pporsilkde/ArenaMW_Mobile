@@ -27,6 +27,7 @@ usage() {
 	echo "	--ccache: use ccache to speed up repeated builds"
 	echo "	--dependencies-only: build Android native dependencies and stop"
 	echo "	--client-only: build the ArenaMW Android client and deploy it"
+	echo "	--ng-gl4es-only: rebuild/deploy only Sisah2 NG-GL4ES (keeps OpenMW and other deps cached)"
 	echo "	--debug: produce a debug build without optimizations"
 	echo "	--release: produce a release build with optimizations (default)"
 	exit 0
@@ -63,6 +64,10 @@ while [[ $# -gt 0 ]]; do
 			;;
 		--client-only)
 			BUILD_STAGE="client"
+			shift
+			;;
+		--ng-gl4es-only)
+			BUILD_STAGE="ng-gl4es"
 			shift
 			;;
 		--debug)
@@ -163,6 +168,19 @@ echo "==> Build using $NCPU CPUs"
 mkdir -p build/$ARCH/
 mkdir -p prefix/$ARCH/
 
+# NG-GL4ES has its own source identity so changing wrapper branch does not force
+# a rebuild of Bullet/OSG/MyGUI/etc. Only the wrapper ExternalProject is reset.
+GL4ES_REPO="${GL4ES_GIT_REPOSITORY:-https://github.com/Sisah2/NG-GL4ES.git}"
+GL4ES_TAG="${GL4ES_GIT_TAG:-Openmw3}"
+GL4ES_CACHE_ID="$GL4ES_REPO@$GL4ES_TAG"
+GL4ES_MARKER="build/$ARCH/.ng-gl4es-source"
+if [[ ! -f "$GL4ES_MARKER" || "$(cat "$GL4ES_MARKER" 2>/dev/null || true)" != "$GL4ES_CACHE_ID" ]]; then
+    echo "==> NG-GL4ES source changed: $GL4ES_CACHE_ID"
+    rm -rf "build/$ARCH/NG-GL4ES-prefix"
+    rm -f "prefix/$ARCH/lib/libng_gl4es.so" "prefix/$ARCH/lib/libspirv-cross-c-shared.so"
+    printf '%s\n' "$GL4ES_CACHE_ID" > "$GL4ES_MARKER"
+fi
+
 # symlink lib64 -> lib so we don't get half the libs in one directory half in another
 mkdir -p prefix/$ARCH/lib
 # A fresh dependency cache has no prefix/include yet. NG-GL4ES installs
@@ -202,7 +220,9 @@ cmake ../.. \
 	-DFFMPEG_CPU=$FFMPEG_CPU \
 	-DBUILD_JOBS="$NCPU" \
 	-DARENAMW_REPOSITORY="${ARENAMW_REPOSITORY:-https://github.com/pporsilkde/AMW.git}" \
-	-DARENAMW_GIT_TAG="${ARENAMW_GIT_TAG:-main}"
+	-DARENAMW_GIT_TAG="${ARENAMW_GIT_TAG:-main}" \
+	-DGL4ES_GIT_REPOSITORY="$GL4ES_REPO" \
+	-DGL4ES_GIT_TAG="$GL4ES_TAG"
 
 # Native dependency caches are restored by CI. ArenaMW has no master/server target.
 
@@ -235,12 +255,28 @@ case "$BUILD_STAGE" in
 	client)
 		run_compact_client_build
 		;;
+	ng-gl4es)
+		cmake --build . --target NG-GL4ES --parallel "$NCPU"
+		;;
 	all)
 		cmake --build . --parallel "$NCPU"
 		;;
 esac
 
 popd
+
+if [[ "$BUILD_STAGE" == "ng-gl4es" ]]; then
+    echo "==> Deploying only NG-GL4ES"
+    mkdir -p ../app/src/main/jniLibs/$ABI/
+    rm -f ../app/src/main/jniLibs/$ABI/libspirv-cross-c-shared.so
+    cp "prefix/$ARCH/lib/libng_gl4es.so" ../app/src/main/jniLibs/$ABI/
+    if command -v "$NDK_TRIPLET-strip" >/dev/null 2>&1; then
+        "$NDK_TRIPLET-strip" ../app/src/main/jniLibs/$ABI/libng_gl4es.so || true
+    fi
+    ls -lh ../app/src/main/jniLibs/$ABI/libng_gl4es.so
+    echo "==> NG-GL4ES-only rebuild completed; OpenMW and other native dependencies were not rebuilt"
+    exit 0
+fi
 
 if [[ "$BUILD_STAGE" == "dependencies" ]]; then
 	echo "==> Native dependency checkpoint completed"
@@ -263,8 +299,8 @@ fi
 cp "$OPENMW_SO" ../app/src/main/jniLibs/$ABI/libopenmw.so
 
 # copy over libs we compiled, but report the exact missing file instead of a generic cp failure.
-# NG-GL4ES installs libng_gl4es.so and libspirv-cross-c-shared.so in prefix/$ARCH/lib/.
-for lib in libopenal libSDL2 libhidapi libng_gl4es libspirv-cross-c-shared; do
+# Sisah2/Openmw3 links SPIRV-Cross into libng_gl4es.so; only that shared wrapper is packaged.
+for lib in libopenal libSDL2 libhidapi libng_gl4es; do
 	LIB_PATH="prefix/$ARCH/lib/${lib}.so"
 	if [[ ! -f "$LIB_PATH" ]]; then
 		echo "Required Android shared library is missing: $LIB_PATH" >&2
@@ -323,7 +359,6 @@ if [[ "$GENERATE_DEBUG_SYMBOLS" == "true" ]]; then
 	cp "./build/$ARCH/arenamw-prefix/src/arenamw-build/libopenmw.so" "./symbols/$ABI/libopenmw.so"
 	# Unstripped NG-GL4ES artifacts (built in-source, CMake project — not ndk-build)
 	cp "./build/$ARCH/NG-GL4ES-prefix/src/NG-GL4ES/libng_gl4es.so" "./symbols/$ABI/"
-	cp "./build/$ARCH/NG-GL4ES-prefix/src/NG-GL4ES/libraries/$ABI/libspirv-cross-c-shared.so" "./symbols/$ABI/"
 	cp "../app/src/main/jniLibs/$ABI/libc++_shared.so" "./symbols/$ABI/"
 	if [ $ASAN = true ]; then
 		cp ./toolchain/$ARCH/lib64/clang/*/lib/linux/libclang_rt.asan-$ASAN_ARCH-android.so "./symbols/$ABI/"

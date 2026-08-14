@@ -3,7 +3,14 @@
     android:id="@+id/cardView"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@color/modItemBackgroundColor"
+    android:background="@drawable/mod_item_background"
+    android:layout_marginLeft="10dp"
+    android:layout_marginRight="10dp"
+    android:layout_marginTop="4dp"
+    android:layout_marginBottom="4dp"
+    android:minHeight="56dp"
+    android:paddingLeft="4dp"
+    android:paddingRight="4dp"
     android:orientation="horizontal"
     android:visibility="visible">
 

@@ -28,6 +28,8 @@ jobs:
       GENERATE_DEBUG_SYMBOLS: "false"
       ARENAMW_REPOSITORY: https://github.com/pporsilkde/AMW.git
       ARENAMW_GIT_TAG: main
+      GL4ES_GIT_REPOSITORY: https://github.com/Sisah2/NG-GL4ES.git
+      GL4ES_GIT_TAG: Openmw3
       ARENAMW_INCREMENTAL_CACHE_EPOCH: arenamw-android-arm64-inc-v1
       GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx3g
 

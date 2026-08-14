@@ -36,9 +36,9 @@ set(BULLET_HASH SHA256=baa642c906576d4d98d041d0acb80d85dd6eff6e3c16a009b1abf1ccd
 set(MYGUI_VERSION 3.4.0)
 set(MYGUI_HASH SHA256=d1d5f294670ae71f7200ed4b30859018281d8cfd45d6a38d18b97a4aba604c42)
 
-# https://github.com/sisah2/ng_gl4es/releases
-set(GL4ES_VERSION 04d3acdd2f7b06085d23ae225ae977b2b7429b98)
-# set(GL4ES_HASH SHA256=b565e717c7d192e936bda25f3cb90ad8db398af56414ec08294b6716574c1a6d)
+# ArenaMW Android graphics wrapper. Openmw3 is the OpenMW-oriented Sisah2 branch.
+set(GL4ES_GIT_REPOSITORY "https://github.com/Sisah2/NG-GL4ES.git" CACHE STRING "NG-GL4ES repository")
+set(GL4ES_GIT_TAG "Openmw3" CACHE STRING "NG-GL4ES branch/tag")
 
 # https://github.com/OpenMW/osg/releases
 set(OSG_VERSION ada34a6d38772f684aa70d2eb76549a33edc9a5f)
@@ -321,32 +321,28 @@ ExternalProject_Add(bullet
 )
 
 ExternalProject_Add(NG-GL4ES
-	URL https://github.com/sisah2/NG-GL4ES/archive/${GL4ES_VERSION}.tar.gz
-	#URL_HASH ${GL4ES_HASH}
+	GIT_REPOSITORY ${GL4ES_GIT_REPOSITORY}
+	GIT_TAG ${GL4ES_GIT_TAG}
+	GIT_SHALLOW FALSE
+	GIT_SUBMODULES_RECURSE TRUE
+	UPDATE_DISCONNECTED TRUE
 	DOWNLOAD_DIR ${download_dir}
 
 	BUILD_IN_SOURCE 1
 
-	# libglslang.a (prebuilt) ссылается на std::filesystem::__absolute —
-	# в NDK r21e libc++ этого символа нет. Патчим CMakeLists.txt NG-GL4ES,
-	# добавляя stub-файл с реализацией no-op, чтобы линкер был удовлетворён.
-	# Используем .cpp (а не .S), т.к. NG-GL4ES не вызывает enable_language(ASM)
-	# и .S-файл был бы тихо проигнорирован при сборке.
-	PATCH_COMMAND
-	  cp ${CMAKE_SOURCE_DIR}/patches/ng-gl4es/fs_stub.cpp <SOURCE_DIR>/fs_stub.cpp
-	  COMMAND sh -c "grep -qF fs_stub.cpp <SOURCE_DIR>/CMakeLists.txt || echo 'target_sources(ng_gl4es PRIVATE fs_stub.cpp)' >> <SOURCE_DIR>/CMakeLists.txt"
-
+	# Openmw3 builds glslang and SPIRV-Cross from its pinned submodules with the
+	# same Android NDK, so the old prebuilt-glslang std::filesystem ABI stub is
+	# intentionally not injected here.
 	CONFIGURE_COMMAND ${wrapper_command} cmake <SOURCE_DIR>
 	${COMMON_CMAKE_ARGS}
+	-DINCLUDE_SPIRV_TOOLS=OFF
 
 	BUILD_COMMAND ${wrapper_command} $(MAKE)
 
-	# Do not rely on another dependency/cache having created prefix/include.
-	# Copy the *contents* of NG-GL4ES/include so an existing gl4es directory
-	# cannot accidentally produce prefix/include/gl4es/include/... .
+	# Openmw3 links SPIRV-Cross into libng_gl4es, so only the wrapper shared
+	# object itself is packaged. This also avoids stale old shared SPIRV-Cross.
 	INSTALL_COMMAND mkdir -p ${prefix}/lib/ ${prefix}/include/gl4es/
 	COMMAND cp libng_gl4es.so ${prefix}/lib/
-	COMMAND cp <SOURCE_DIR>/libraries/${app_abi}/libspirv-cross-c-shared.so ${prefix}/lib/
 	COMMAND cp -r <SOURCE_DIR>/include/. ${prefix}/include/gl4es/
 	COMMAND cp -r <SOURCE_DIR>/include/. ${prefix}/include/
 )
@@ -514,6 +510,7 @@ set(ARENAMW_PATCH
 	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/17-android-clean-ui-v13-3.patch &&
 	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/18-android-world-distance-land-v13-4.patch &&
 	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/19-android-ui-safety-controls-v13-5.patch &&
+	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/20-android-stock-actor-collision-quickloot-use-v13-6.patch &&
 	cp ${CMAKE_SOURCE_DIR}/patches/openmw/android_main.cpp <SOURCE_DIR>/apps/openmw/android_main.cpp &&
 	sh ${CMAKE_SOURCE_DIR}/patches/openmw/patch-sse2neon.sh <SOURCE_DIR>
 )
