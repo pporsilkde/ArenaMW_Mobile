@@ -213,6 +213,10 @@ object GraphicsPresets {
         w("Shaders", "smaa enabled", "false")
         w("Shaders", "atmospheric fog enabled", "false")
         w("Shaders", "god rays enabled", "false")
+        // V13.7.12: these two native post-process stages were still enabled by
+        // AMW defaults even though their UI categories are removed on Android.
+        w("Shaders", "sharpening enabled", "false")
+        w("Shaders", "dithering enabled", "false")
 
         // V13.7.4: simple shader water is authoritative on Android. This also
         // overwrites stale "new"/PBR values left by older launcher builds.

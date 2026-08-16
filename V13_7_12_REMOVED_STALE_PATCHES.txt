@@ -1,0 +1,6 @@
+Removed from active buildscripts/patches/openmw because they are obsolete and not part of the CMake patch chain:
+- 06-android-rqcb-postdraw-capture-camera.patch
+- 06-android-rqcb-postdraw-capture-camera.patch.DISABLED
+- 07-android-safe-render-v2-legacy-water.patch
+- 13-android-postfx-v9.patch
+- 14-android-touch-postfx-hdr-v10.patch

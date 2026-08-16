@@ -1,0 +1,166 @@
+diff --git a/files/mygui/openmw_settings_window.layout b/files/mygui/openmw_settings_window.layout
+index 4233340..e76e041 100644
+--- a/files/mygui/openmw_settings_window.layout
++++ b/files/mygui/openmw_settings_window.layout
+@@ -318,10 +318,13 @@
+           <Property key="Caption" value="#{arenamp=settings.subsection.display}"/>
+           <Widget type="ScrollView" skin="MW_ScrollView" position="4 4 478 400" align="Left Top" name="DisplayScroll">
+             <Property key="CanvasAlign" value="Left Top"/>
+-            <Property key="CanvasSize" value="458 630"/>
+-            <Widget type="ListBox" skin="MW_List" position="8 8 220 142" name="ResolutionList"/>
+-            <Widget type="HBox" skin="" position="244 8 206 24">
+-              <Widget type="AutoSizedButton" skin="MW_Button" position="0 0 24 24" name="FullscreenButton">
++            <Property key="CanvasSize" value="458 400"/>
++            <Widget type="ListBox" skin="MW_List" position="0 0 1 1" name="ResolutionList">
++              <Property key="Visible" value="false"/>
++            </Widget>
++            <Widget type="HBox" skin="" position="0 0 1 1">
++              <Property key="Visible" value="false"/>
++              <Widget type="AutoSizedButton" skin="MW_Button" position="0 0 1 1" name="FullscreenButton">
+                 <UserString key="SettingCategory" value="Video"/>
+                 <UserString key="SettingName" value="fullscreen"/>
+                 <UserString key="SettingType" value="CheckButton"/>
+@@ -330,7 +333,7 @@
+                 <Property key="Caption" value="#{arenamp=settings.fullscreen}"/>
+               </Widget>
+             </Widget>
+-            <Widget type="HBox" skin="" position="244 38 206 24">
++            <Widget type="HBox" skin="" position="8 8 250 24">
+               <Widget type="AutoSizedButton" skin="MW_Button" position="0 0 24 24" name="VSyncButton">
+                 <UserString key="SettingCategory" value="Video"/>
+                 <UserString key="SettingName" value="vsync"/>
+@@ -340,8 +343,9 @@
+                 <Property key="Caption" value="#{arenamp=settings.vsync}"/>
+               </Widget>
+             </Widget>
+-            <Widget type="HBox" skin="" position="244 68 206 24">
+-              <Widget type="AutoSizedButton" skin="MW_Button" position="0 0 24 24" name="WindowBorderButton">
++            <Widget type="HBox" skin="" position="0 0 1 1">
++              <Property key="Visible" value="false"/>
++              <Widget type="AutoSizedButton" skin="MW_Button" position="0 0 1 1" name="WindowBorderButton">
+                 <UserString key="SettingCategory" value="Video"/>
+                 <UserString key="SettingName" value="window border"/>
+                 <UserString key="SettingType" value="CheckButton"/>
+@@ -350,10 +354,10 @@
+                 <Property key="Caption" value="#{arenamp=settings.window_border}"/>
+               </Widget>
+             </Widget>
+-            <Widget type="TextBox" skin="NormalText" position="8 236 442 18" name="FovText">
++            <Widget type="TextBox" skin="NormalText" position="8 42 442 18" name="FovText">
+               <Property key="Caption" value="#{arenamp=settings.fov}"/>
+             </Widget>
+-            <Widget type="ScrollBar" skin="MW_HScroll" position="8 258 442 16">
++            <Widget type="ScrollBar" skin="MW_HScroll" position="8 62 442 16">
+               <Property key="Range" value="81"/>
+               <Property key="Page" value="1"/>
+               <UserString key="SettingType" value="Slider"/>
+@@ -365,17 +369,17 @@
+               <UserString key="SettingLabelWidget" value="FovText"/>
+               <UserString key="SettingLabelCaption" value="#{arenamp=settings.fov}"/>
+             </Widget>
+-            <Widget type="TextBox" skin="SandText" position="8 276 80 16">
++            <Widget type="TextBox" skin="SandText" position="8 80 80 16">
+               <Property key="Caption" value="#{sLow}"/>
+             </Widget>
+-            <Widget type="TextBox" skin="SandText" position="370 276 80 16">
++            <Widget type="TextBox" skin="SandText" position="370 80 80 16">
+               <Property key="Caption" value="#{sHigh}"/>
+               <Property key="TextAlign" value="Right"/>
+             </Widget>
+-            <Widget type="TextBox" skin="NormalText" position="8 302 442 18" name="GammaText">
++            <Widget type="TextBox" skin="NormalText" position="8 104 442 18" name="GammaText">
+               <Property key="Caption" value="#{sGamma_Correction}"/>
+             </Widget>
+-            <Widget type="ScrollBar" skin="MW_HScroll" position="8 324 442 16" name="GammaSlider">
++            <Widget type="ScrollBar" skin="MW_HScroll" position="8 124 442 16" name="GammaSlider">
+               <Property key="Range" value="10000"/>
+               <Property key="Page" value="300"/>
+               <UserString key="SettingType" value="Slider"/>
+@@ -385,14 +389,14 @@
+               <UserString key="SettingMin" value="0.1"/>
+               <UserString key="SettingMax" value="3.0"/>
+             </Widget>
+-            <Widget type="TextBox" skin="SandText" position="8 342 100 16" name="GammaTextDark">
++            <Widget type="TextBox" skin="SandText" position="8 142 100 16" name="GammaTextDark">
+               <Property key="Caption" value="#{sDark_Gamma}"/>
+             </Widget>
+-            <Widget type="TextBox" skin="SandText" position="350 342 100 16" name="GammaTextLight">
++            <Widget type="TextBox" skin="SandText" position="350 142 100 16" name="GammaTextLight">
+               <Property key="Caption" value="#{sLight_Gamma}"/>
+               <Property key="TextAlign" value="Right"/>
+             </Widget>
+-            <Widget type="Widget" skin="" position="8 368 442 42" name="AnisotropyBox">
++            <Widget type="Widget" skin="" position="8 168 442 42" name="AnisotropyBox">
+               <Widget type="TextBox" skin="NormalText" position="0 0 442 18" name="AnisotropyLabel">
+                 <Property key="Caption" value="#{arenamp=settings.anisotropy}"/>
+               </Widget>
+@@ -409,10 +413,10 @@
+                 <UserString key="SettingLabelCaption" value="#{arenamp=settings.anisotropy}"/>
+               </Widget>
+             </Widget>
+-            <Widget type="TextBox" skin="NormalText" position="8 554 442 18">
++            <Widget type="TextBox" skin="NormalText" position="8 340 442 18">
+               <Property key="Caption" value="#{sTransparency_Menu}"/>
+             </Widget>
+-            <Widget type="ScrollBar" skin="MW_HScroll" position="8 576 442 16">
++            <Widget type="ScrollBar" skin="MW_HScroll" position="8 360 442 16">
+               <Property key="Range" value="10000"/>
+               <Property key="Page" value="300"/>
+               <UserString key="SettingType" value="Slider"/>
+@@ -420,17 +424,17 @@
+               <UserString key="SettingName" value="menu transparency"/>
+               <UserString key="SettingValueType" value="Float"/>
+             </Widget>
+-            <Widget type="TextBox" skin="SandText" position="8 594 80 16">
++            <Widget type="TextBox" skin="SandText" position="8 378 80 16">
+               <Property key="Caption" value="#{sFull}"/>
+             </Widget>
+-            <Widget type="TextBox" skin="SandText" position="370 594 80 16">
++            <Widget type="TextBox" skin="SandText" position="370 378 80 16">
+               <Property key="Caption" value="#{sNone}"/>
+               <Property key="TextAlign" value="Right"/>
+             </Widget>
+-            <Widget type="TextBox" skin="NormalText" position="8 488 442 18">
++            <Widget type="TextBox" skin="NormalText" position="8 278 442 18">
+               <Property key="Caption" value="#{sMenu_Help_Delay}"/>
+             </Widget>
+-            <Widget type="ScrollBar" skin="MW_HScroll" position="8 510 442 16">
++            <Widget type="ScrollBar" skin="MW_HScroll" position="8 298 442 16">
+               <Property key="Range" value="10000"/>
+               <Property key="Page" value="300"/>
+               <UserString key="SettingType" value="Slider"/>
+@@ -438,17 +442,17 @@
+               <UserString key="SettingName" value="tooltip delay"/>
+               <UserString key="SettingValueType" value="Float"/>
+             </Widget>
+-            <Widget type="TextBox" skin="SandText" position="8 528 80 16">
++            <Widget type="TextBox" skin="SandText" position="8 316 80 16">
+               <Property key="Caption" value="#{sFast}"/>
+             </Widget>
+-            <Widget type="TextBox" skin="SandText" position="370 528 80 16">
++            <Widget type="TextBox" skin="SandText" position="370 316 80 16">
+               <Property key="Caption" value="#{sSlow}"/>
+               <Property key="TextAlign" value="Right"/>
+             </Widget>
+-            <Widget type="TextBox" skin="NormalText" position="8 422 442 18" name="GuiScalingFactorLabel">
++            <Widget type="TextBox" skin="NormalText" position="8 216 442 18" name="GuiScalingFactorLabel">
+               <Property key="Caption" value="#{arenamp=settings.gui_scale}"/>
+             </Widget>
+-            <Widget type="ScrollBar" skin="MW_HScroll" position="8 444 442 16" name="GuiScalingFactor">
++            <Widget type="ScrollBar" skin="MW_HScroll" position="8 236 442 16" name="GuiScalingFactor">
+               <Property key="Range" value="151"/>
+               <Property key="Page" value="1"/>
+               <UserString key="SettingType" value="Slider"/>
+@@ -460,10 +464,10 @@
+               <UserString key="SettingLabelWidget" value="GuiScalingFactorLabel"/>
+               <UserString key="SettingLabelCaption" value="#{arenamp=settings.gui_scale}"/>
+             </Widget>
+-            <Widget type="TextBox" skin="SandText" position="8 462 80 16">
++            <Widget type="TextBox" skin="SandText" position="8 254 80 16">
+               <Property key="Caption" value="100%"/>
+             </Widget>
+-            <Widget type="TextBox" skin="SandText" position="370 462  80 16">
++            <Widget type="TextBox" skin="SandText" position="370 254  80 16">
+               <Property key="Caption" value="250%"/>
+               <Property key="TextAlign" value="Right"/>
+             </Widget>

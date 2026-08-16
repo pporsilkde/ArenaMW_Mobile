@@ -400,15 +400,11 @@ class MainActivity : AppCompatActivity() {
     private fun startGame() {
 //***********************************************************************************************************************************************************
 
+        // V13.7.14: launcher-side manual GUI scaling was removed.
+        // Always use the device-derived automatic scale and clear stale values from older builds.
         var scaling = 0f
-
-        try {
-            scaling = prefs.getString("pref_uiScaling", "")!!.toFloat()
-        } catch (e: NumberFormatException) {
-            with(prefs.edit()) {
-                putString("pref_uiScaling", "")
-                apply()
-            }
+        if (!prefs.getString("pref_uiScaling", "").isNullOrEmpty()) {
+            prefs.edit().putString("pref_uiScaling", "").apply()
         }
         // set up gamma, if invalid, use the default (1.0)
         var gamma = 1.0f
