@@ -38,6 +38,7 @@ import android.preference.PreferenceGroup
 import androidx.core.content.ContextCompat
 
 import com.codekidlabs.storagechooser.StorageChooser
+import com.codekidlabs.storagechooser.Content
 import com.libopenmw.openmw.R
 import file.GameInstaller
 
@@ -80,11 +81,25 @@ class FragmentSettings : PreferenceFragment(), OnSharedPreferenceChangeListener 
                     Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                 showError(R.string.permissions_error_title, R.string.permissions_error_message)
             } else {
+                val chooserContent = Content().apply {
+                    setSelectLabel(getString(R.string.filechooser_select))
+                    setCreateLabel(getString(R.string.filechooser_create))
+                    setNewFolderLabel(getString(R.string.filechooser_new_folder))
+                    setCancelLabel(getString(R.string.filechooser_cancel))
+                    setOverviewHeading(getString(R.string.filechooser_choose_storage))
+                    setInternalStorageText(getString(R.string.filechooser_internal_storage))
+                    setFreeSpaceText(getString(R.string.filechooser_free_space))
+                    setFolderCreatedToastText(getString(R.string.filechooser_folder_created))
+                    setFolderErrorToastText(getString(R.string.filechooser_folder_error))
+                    setTextfieldHintText(getString(R.string.filechooser_folder_name))
+                    setTextfieldErrorText(getString(R.string.filechooser_empty_folder_name))
+                }
                 val chooser = StorageChooser.Builder()
                     .withActivity(activity)
                     .withFragmentManager(fragmentManager)
                     .withMemoryBar(true)
                     .allowCustomPath(true)
+                    .withContent(chooserContent)
                     .setType(StorageChooser.DIRECTORY_CHOOSER)
                     .build()
 

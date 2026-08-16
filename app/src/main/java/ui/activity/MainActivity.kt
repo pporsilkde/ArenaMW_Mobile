@@ -430,7 +430,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         val dialog = ProgressDialog.show(
-            this, "", "Preparing for launch...", true)
+            this, "", getString(R.string.preparing_launch), true)
 
         val activity = this
 
@@ -472,7 +472,7 @@ class MainActivity : AppCompatActivity() {
                     settingsFolder.mkdirs()
                 }
                 if (!settingsFolder.isDirectory) {
-                    throw IOException("Cannot create user config directory: ${settingsFolder.absolutePath}")
+                    throw IOException(getString(R.string.user_config_create_failed, settingsFolder.absolutePath))
                 }
 
                 val settingsFile = File(settingsFolder, "settings.cfg")
@@ -653,7 +653,7 @@ class MainActivity : AppCompatActivity() {
                     try { dialog.dismiss() } catch (_: Exception) {}
                     Toast.makeText(
                         activity,
-                        "Не удалось запустить игру: $msg",
+                        getString(R.string.launch_failed, msg),
                         Toast.LENGTH_LONG
                     ).show()
                 }

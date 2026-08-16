@@ -23,6 +23,8 @@ import com.libopenmw.openmw.R
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import com.google.android.material.tabs.TabLayout
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.ItemTouchHelper
@@ -32,15 +34,37 @@ import file.BuildManifest
 import kotlinx.android.synthetic.main.activity_mods.*
 import mods.*
 import android.view.MenuItem
+import android.app.AlertDialog
+import android.preference.PreferenceManager
+import android.widget.Toast
 
 
 class ModsActivity : AppCompatActivity() {
+    private var modsReady = false
+    private var manifestDirty = false
+    private val manifestHandler = Handler(Looper.getMainLooper())
+    private val manifestSaveRunnable = Runnable { persistManifest(false) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_mods)
 
         setSupportActionBar(findViewById(R.id.mods_toolbar))
+
+        // Never construct the Mods database around an unset/invalid game path.
+        // On a fresh install this used to crash when "Mods" was opened before
+        // selecting the Morrowind resources directory.
+        val gamePath = PreferenceManager.getDefaultSharedPreferences(this)
+            .getString("game_files", "").orEmpty()
+        if (gamePath.isBlank() || !GameInstaller(gamePath).check()) {
+            AlertDialog.Builder(this)
+                .setTitle(R.string.no_data_files_title)
+                .setMessage(R.string.no_data_files_message)
+                .setPositiveButton(android.R.string.ok) { _, _ -> finish() }
+                .setOnCancelListener { finish() }
+                .show()
+            return
+        }
 
         // Enable the "back" icon in the action bar
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
@@ -66,6 +90,7 @@ class ModsActivity : AppCompatActivity() {
         setupModList(findViewById(R.id.list_mods), ModType.Plugin)
         setupModList(findViewById(R.id.list_resources), ModType.Resource)
         setupModList(findViewById(R.id.list_groundcovers), ModType.Groundcover)
+        modsReady = true
     }
 
     /**
@@ -80,8 +105,10 @@ class ModsActivity : AppCompatActivity() {
         linearLayoutManager.orientation = RecyclerView.VERTICAL
         list.layoutManager = linearLayoutManager
 
-        // Set up the adapter using the specified ModsCollection
-        val adapter = ModsAdapter(ModsCollection(type, dataFiles, database))
+        // Keep build.ini synchronized while checkboxes/order are edited.
+        val adapter = ModsAdapter(ModsCollection(type, dataFiles, database)) {
+            scheduleManifestSave()
+        }
 
         // Set up the drag-and-drop callback
         val callback = ModMoveCallback(adapter)
@@ -94,10 +121,44 @@ class ModsActivity : AppCompatActivity() {
     }
 
 
+    private fun scheduleManifestSave() {
+        if (!modsReady) return
+        manifestDirty = true
+        manifestHandler.removeCallbacks(manifestSaveRunnable)
+        // Avoid a disk write for every drag step while still keeping the portable
+        // manifest nearly immediately in sync with the mod database.
+        manifestHandler.postDelayed(manifestSaveRunnable, 200L)
+    }
+
+    private fun persistManifest(showError: Boolean) {
+        if (!modsReady || (!manifestDirty && !showError)) return
+        manifestHandler.removeCallbacks(manifestSaveRunnable)
+        try {
+            BuildManifest.writeFromDatabase(this)
+            manifestDirty = false
+        } catch (e: Throwable) {
+            if (showError) {
+                Toast.makeText(
+                    this,
+                    getString(R.string.build_manifest_save_failed, e.message ?: e.javaClass.simpleName),
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
+    }
+
     override fun onPause() {
+        // Force the final checkbox/order state to disk before leaving the screen.
+        if (modsReady) {
+            manifestDirty = true
+            persistManifest(true)
+        }
         super.onPause()
-        // Persist enabled state and exact load order to portable build.ini.
-        BuildManifest.writeFromDatabase(this)
+    }
+
+    override fun onDestroy() {
+        manifestHandler.removeCallbacks(manifestSaveRunnable)
+        super.onDestroy()
     }
 
     /**
