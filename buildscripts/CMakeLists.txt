@@ -506,31 +506,7 @@ set(OPENMW_COMMON
 )
 
 set(ARENAMW_PATCH
-	# Keep only the Android compatibility patches used by the original builder.
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/01-loadingscreen-disable-for-now.patch &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/02-windowmanagerimp-always-show-mouse-when-possible-pat.patch &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/03-android-fix-context-being-lost-on-app-minimize.patch &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/04-settingswindow-save-user-settings-file-when-ok-is-pr.patch &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openmw/05-components-misc-stringops-use-boost-format-instead-o.patch &&
-	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/06-android-safe-render-v1.patch &&
-	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/07-android-complex-water-v3.patch &&
-	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/08-android-gles-shader-compat-v4.patch &&
-	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/09-android-complex-water-gles-compat-v5.patch &&
-	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/10-android-complex-water-geometry-shadows-v6.patch &&
-	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/11-android-gles-shadow-matrix-v7.patch &&
-	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/12-android-mobile-tuning-v8.patch &&
-	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/16-android-mobile-settings-ui-v13-2.patch &&
-	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/17-android-clean-ui-v13-3.patch &&
-	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/18-android-world-distance-land-v13-4.patch &&
-	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/19-android-ui-safety-controls-v13-5.patch &&
-	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/20-android-stock-actor-collision-quickloot-use-v13-6.patch &&
-	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/21-android-water-fastpath-v13-7.patch &&
-	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/22-android-simple-water-shadow-distance-v13-7-4.patch &&
-	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/23-android-water-angle-stability-v13-7-5.patch &&
-	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/24-android-disable-removed-render-effects-v13-7-12.patch &&
-	git -C <SOURCE_DIR> apply --whitespace=nowarn ${CMAKE_SOURCE_DIR}/patches/openmw/25-android-compact-display-v13-7-13.patch &&
-	cp ${CMAKE_SOURCE_DIR}/patches/openmw/android_main.cpp <SOURCE_DIR>/apps/openmw/android_main.cpp &&
-	sh ${CMAKE_SOURCE_DIR}/patches/openmw/patch-sse2neon.sh <SOURCE_DIR>
+	sh ${CMAKE_SOURCE_DIR}/patches/openmw/apply-arenamw-patches.sh <SOURCE_DIR>
 )
 
 # Original Android dependency stack, reduced to the single-player requirements.

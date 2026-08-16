@@ -1,0 +1,121 @@
+#!/bin/sh
+# ArenaMW Android cumulative patch applicator.
+#
+# The engine patch chain contains overlapping cumulative diffs, so reverse-
+# checking every individual patch is not a reliable way to detect an already
+# patched tree.  Instead we use an untracked patch-set marker.  `git clean -fdx`
+# removes the marker whenever CI refreshes the upstream checkout.
+set -eu
+
+SRC="${1:-}"
+if [ -z "$SRC" ]; then
+    echo "apply-arenamw-patches.sh: missing ArenaMW source directory" >&2
+    exit 2
+fi
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+PATCHSET_ID="arenamw-android-v13.7.17-01-25-moc-r21e"
+MARKER="$SRC/.arenamw_android_patchset"
+
+update_android_main() {
+    if ! cmp -s "$SCRIPT_DIR/android_main.cpp" "$SRC/apps/openmw/android_main.cpp"; then
+        cp "$SCRIPT_DIR/android_main.cpp" "$SRC/apps/openmw/android_main.cpp"
+        echo "==> update android_main.cpp"
+    else
+        echo "==> already current android_main.cpp"
+    fi
+}
+
+finish_patchset() {
+    update_android_main
+    # Keep MaskedOcclusionCulling enabled on the project's NDK r21e toolchain.
+    sh "$SCRIPT_DIR/patch-sse2neon.sh" "$SRC"
+    printf '%s\n' "$PATCHSET_ID" > "$MARKER"
+    echo "==> ArenaMW Android patch set is present: $PATCHSET_ID"
+}
+
+if [ -f "$MARKER" ] && [ "$(cat "$MARKER" 2>/dev/null || true)" = "$PATCHSET_ID" ]; then
+    # Cheap verification path for a restored incremental cache.  Neither helper
+    # rewrites files when they are already current, preserving useful mtimes.
+    update_android_main
+    sh "$SCRIPT_DIR/patch-sse2neon.sh" "$SRC"
+    echo "==> ArenaMW Android patch set already verified: $PATCHSET_ID"
+    exit 0
+fi
+
+# Migration path for a cache created by V13.7.16 or older.  Patch 25 is the
+# last engine diff in that chain, so if it can be cleanly reversed the cached
+# tree already has the cumulative Android engine patches.  Adopt it and add the
+# new marker instead of trying to reverse-check earlier overlapping patches.
+if git -C "$SRC" apply --reverse --check --whitespace=nowarn \
+    "$SCRIPT_DIR/25-android-compact-display-v13-7-13.patch" >/dev/null 2>&1; then
+    echo "==> adopting previously patched ArenaMW cache"
+    finish_patchset
+    exit 0
+fi
+
+# A fresh/update checkout must be clean before the cumulative chain is applied.
+# If it is dirty here, the caller should reset it and retry rather than risk a
+# half-patched source tree.
+if ! git -C "$SRC" diff --quiet --ignore-submodules -- || \
+   ! git -C "$SRC" diff --cached --quiet --ignore-submodules --; then
+    echo "ERROR: ArenaMW source is dirty but has no valid Android patch-set marker" >&2
+    echo "       Reset/clean the checkout and retry the patch applicator." >&2
+    exit 19
+fi
+
+apply_patch_file() {
+    p="$1"
+    name=$(basename "$p")
+    if ! patch --dry-run -d "$SRC" -p1 -s < "$p" >/dev/null 2>&1; then
+        echo "ERROR: legacy patch does not apply to this ArenaMW revision: $name" >&2
+        exit 20
+    fi
+    echo "==> apply $name"
+    patch -d "$SRC" -p1 -s < "$p"
+}
+
+apply_git_patch() {
+    p="$1"
+    name=$(basename "$p")
+    if ! git -C "$SRC" apply --check --whitespace=nowarn "$p" >/dev/null 2>&1; then
+        echo "ERROR: git patch does not apply to this ArenaMW revision: $name" >&2
+        exit 21
+    fi
+    echo "==> apply $name"
+    git -C "$SRC" apply --whitespace=nowarn "$p"
+}
+
+for n in \
+  01-loadingscreen-disable-for-now.patch \
+  02-windowmanagerimp-always-show-mouse-when-possible-pat.patch \
+  03-android-fix-context-being-lost-on-app-minimize.patch \
+  04-settingswindow-save-user-settings-file-when-ok-is-pr.patch \
+  05-components-misc-stringops-use-boost-format-instead-o.patch
+do
+    apply_patch_file "$SCRIPT_DIR/$n"
+done
+
+for n in \
+  06-android-safe-render-v1.patch \
+  07-android-complex-water-v3.patch \
+  08-android-gles-shader-compat-v4.patch \
+  09-android-complex-water-gles-compat-v5.patch \
+  10-android-complex-water-geometry-shadows-v6.patch \
+  11-android-gles-shadow-matrix-v7.patch \
+  12-android-mobile-tuning-v8.patch \
+  16-android-mobile-settings-ui-v13-2.patch \
+  17-android-clean-ui-v13-3.patch \
+  18-android-world-distance-land-v13-4.patch \
+  19-android-ui-safety-controls-v13-5.patch \
+  20-android-stock-actor-collision-quickloot-use-v13-6.patch \
+  21-android-water-fastpath-v13-7.patch \
+  22-android-simple-water-shadow-distance-v13-7-4.patch \
+  23-android-water-angle-stability-v13-7-5.patch \
+  24-android-disable-removed-render-effects-v13-7-12.patch \
+  25-android-compact-display-v13-7-13.patch
+do
+    apply_git_patch "$SCRIPT_DIR/$n"
+done
+
+finish_patchset

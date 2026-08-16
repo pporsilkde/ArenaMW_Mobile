@@ -30,7 +30,7 @@ jobs:
       ARENAMW_GIT_TAG: main
       GL4ES_GIT_REPOSITORY: https://github.com/Sisah2/NG-GL4ES.git
       GL4ES_GIT_TAG: Openmw3
-      ARENAMW_INCREMENTAL_CACHE_EPOCH: arenamw-android-arm64-inc-v1
+      ARENAMW_INCREMENTAL_CACHE_EPOCH: arenamw-android-arm64-inc-v2
       GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx3g
 
     steps:
@@ -143,22 +143,23 @@ jobs:
             ${{ env.ARENAMW_INCREMENTAL_CACHE_EPOCH }}-${{ hashFiles('buildscripts/build.sh', 'buildscripts/CMakeLists.txt', 'buildscripts/include/version.sh', 'buildscripts/patches/openmw/**', '.github/workflows/android.yml') }}-
 
       # ExternalProject keeps the checked-out AMW repository inside arenamw-prefix.
-      # If upstream/main did not move, leave that tree completely untouched so its
-      # mtimes match the cached object files.  If upstream changed, reset only the
-      # patched working tree, fetch the new commit and invalidate patch/configure
-      # stamps without deleting the binary directory.  Make/CMake then rebuilds
-      # only source files affected by the Git update (plus Android-patched files).
+      # A restored prefix can resume after its patch step, so CI must verify/apply
+      # the Android patch set itself before configure.  The source checkout may be
+      # refreshed while the binary directory remains incremental.
       - name: Update cached ArenaMW source from pporsilkde/AMW
         shell: bash
         run: |
           set -euo pipefail
           SRC="buildscripts/build/arm64/arenamw-prefix/src/arenamw"
           STAMP="buildscripts/build/arm64/arenamw-prefix/src/arenamw-stamp"
+          APPLY="buildscripts/patches/openmw/apply-arenamw-patches.sh"
 
           if [[ ! -d "$SRC/.git" ]]; then
-            echo '==> No cached ArenaMW checkout; ExternalProject will clone pporsilkde/AMW on this run'
+            echo '==> No cached ArenaMW checkout; ExternalProject will clone and patch ArenaMW on this run'
             if [[ -e "$SRC" || -d "buildscripts/build/arm64/arenamw-prefix" ]]; then
-              # A partial/corrupt cache must not block ExternalProject's first clone.
+              # A partial/corrupt source cache must not block ExternalProject's first clone.
+              # Preserve no partial prefix here because its stamps can make ExternalProject
+              # skip the clone/patch steps.
               rm -rf buildscripts/build/arm64/arenamw-prefix
             fi
             exit 0
@@ -172,24 +173,37 @@ jobs:
             exit 1
           fi
 
-          PATCH_STAMP="$STAMP/arenamw-patch"
           echo "==> Cached ArenaMW base: $LOCAL_SHA"
           echo "==> Upstream ArenaMW base: $REMOTE_SHA"
 
-          if [[ "$LOCAL_SHA" == "$REMOTE_SHA" && -f "$PATCH_STAMP" ]]; then
-            echo '==> ArenaMW source is unchanged; preserving source/object mtimes for a true incremental build'
-            exit 0
+          if [[ "$LOCAL_SHA" != "$REMOTE_SHA" ]]; then
+            echo '==> ArenaMW upstream changed; update checkout while preserving the binary tree'
+            git -C "$SRC" reset --hard HEAD
+            git -C "$SRC" clean -fdx
+            git -C "$SRC" fetch --depth=50 origin "$ARENAMW_GIT_TAG"
+            git -C "$SRC" checkout --detach "$REMOTE_SHA"
+          else
+            echo '==> ArenaMW upstream unchanged; verify Android patch set in cached source'
           fi
 
-          echo '==> ArenaMW source or patch state changed; updating checkout without deleting the build tree'
-          # Android compatibility patches leave the checkout dirty by design. Revert
-          # them before moving to the new upstream commit, then let ExternalProject
-          # apply them once again via the invalidated patch stamp.
-          git -C "$SRC" reset --hard HEAD
-          git -C "$SRC" clean -fdx
-          git -C "$SRC" fetch --depth=50 origin "$ARENAMW_GIT_TAG"
-          git -C "$SRC" checkout --detach "$REMOTE_SHA"
+          # Do not rely on ExternalProject stamp invalidation for the patch step.
+          # CMake 3.31 can legitimately resume at configure when a cached prefix is
+          # restored. Apply the complete idempotent patch chain here as well, so a
+          # refreshed upstream checkout can never be configured unpatched.
+          if ! sh "$APPLY" "$SRC"; then
+            echo '::warning::Cached ArenaMW tree was not in a reusable patch state; resetting source and retrying once'
+            git -C "$SRC" reset --hard HEAD
+            git -C "$SRC" clean -fdx
+            sh "$APPLY" "$SRC"
+          fi
 
+          test -f "$SRC/.arenamw_android_patchset"
+          grep -q 'patched for NDK r21e / Clang 9' "$SRC/extern/maskedoc/sse2neon.h"
+          echo '==> Verified Android patch marker and MaskedOcclusionCulling NDK-r21e compatibility shim'
+
+          # Reconfigure after the verification/update.  Unchanged source mtimes are
+          # preserved by the idempotent patch script, so Make/ccache still keeps this
+          # incremental while avoiding stale configure/build stamps.
           rm -f \
             "$STAMP/arenamw-patch" \
             "$STAMP/arenamw-configure" \
