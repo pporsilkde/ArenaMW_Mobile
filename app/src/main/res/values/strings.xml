@@ -786,7 +786,7 @@
     <string-array name="gfx_distance_entries"><item>4096</item><item>5120</item><item>6144</item><item>8192</item><item>12288</item><item>16384</item><item>24576</item><item>32768</item><item>40960</item></string-array>
     <string-array name="gfx_terrain_entries"><item>Very Low</item><item>Low</item><item>Balanced</item><item>Medium (maximum mobile)</item></string-array>
     <string-array name="gfx_preload_entries"><item>Fixed safe distance — 1000 / 1 worker</item></string-array>
-    <string-array name="gfx_water_entries"><item>Simple water — 256, no refraction</item></string-array>
+    <string-array name="gfx_water_entries"><item>Simple water — RTT 256, no refraction</item><item>Simple water — RTT 256 + refraction</item><item>Simple water — RTT 512 + refraction</item></string-array>
     <string-array name="gfx_shadow_entries"><item>Off</item><item>Player + actors</item><item>Player + actors + objects</item></string-array>
     <string-array name="gfx_shadow_map_entries"><item>512</item><item>1024 (maximum mobile)</item></string-array><string-array name="gfx_shadow_distance_entries"><item>1024</item><item>2048</item><item>4096</item><item>6144</item><item>8192 (maximum)</item></string-array>
     <string-array name="gfx_grass_entries"><item>Off</item><item>Low</item><item>Balanced</item><item>High</item></string-array>

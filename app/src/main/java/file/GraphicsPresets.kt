@@ -56,13 +56,13 @@ object GraphicsPresets {
         "balanced" to Preset(
             "CullDrawThreadPerContext", 1, 1, 1, 6, true,
             12288, .65f, -1, -2, 1024, true, true,
-            1000, 1, 60, 60.0f, "simple", 256, false, 2,
+            1000, 1, 60, 60.0f, "simple", 256, true, 2,
             "characters", 1024, 6144, true, .80f, 6000, "compatibility", "performance"
         ),
         "quality" to Preset(
             "CullDrawThreadPerContext", 1, 1, 1, 8, true,
             24576, .80f, -1, -2, 2048, true, true,
-            1000, 1, 60, 60.0f, "simple", 256, false, 2,
+            1000, 1, 60, 60.0f, "simple", 512, true, 2,
             "objects", 1024, 8192, true, 1.0f, 7100, "standard", "balance"
         ),
         "battery" to Preset(
@@ -93,11 +93,12 @@ object GraphicsPresets {
         // Large preload radii caused visible I/O / upload bursts during abrupt camera turns.
         val preloadDistance = 1000
         val preloadThreads = 1
-        // V13.7.4: Android exposes only the stable simple water path.
-        // Ignore stale PBR water preferences from older launcher versions.
+        // V13.7.5: keep the stable Simple shader, but expose safe RTT/refraction tiers.
+        // PBR remains unavailable on Android.
+        val waterTier = prefs.getString("pref_gfx_water", "simple") ?: "simple"
         val waterMode = "simple"
-        val waterRtt = 256
-        val waterRefraction = false
+        val waterRtt = if (waterTier == "simple_refraction_512") 512 else 256
+        val waterRefraction = waterTier == "simple_refraction" || waterTier == "simple_refraction_512"
         val waterReflection = 2
         val grass = prefs.getString("pref_gfx_grass", "balanced") ?: "balanced"
         val grassEnabled = grass != "off"

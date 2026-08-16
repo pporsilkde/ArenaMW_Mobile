@@ -340,7 +340,8 @@ class OscLongPressButton(
     private val longPressMs: Long,
     private val longPressHandler: () -> Unit,
     private val shortHandler: (() -> Unit)? = null,
-    private val holdKey: Int? = null
+    private val holdKey: Int? = null,
+    private val releaseHoldOnLongPress: Boolean = false
 ) : OscElement(uniqueId, iconName, visibility, defaultX, defaultY) {
 
     @SuppressLint("ClickableViewAccessibility")
@@ -359,6 +360,16 @@ class OscLongPressButton(
         var holdActive = false
         val longRunnable = Runnable {
             longFired = true
+
+            // Некоторые комбинированные кнопки должны перестать держать базовую
+            // клавишу перед выполнением long-press действия. Например, Ctrl
+            // используется для приседания, а длинное удержание должно отправить
+            // чистый Z, а не Ctrl+Z.
+            if (releaseHoldOnLongPress && holdActive) {
+                holdKey?.let { SDLActivity.onNativeKeyUp(it) }
+                holdActive = false
+            }
+
             longPressHandler()
             // Маленький «поп» — подтверждаем, что сработало долгое удержание.
             // Если holdKey активен (клавиша всё ещё зажата), возвращаемся к
@@ -586,8 +597,14 @@ class Osc {
 
         OscGestureButton("scroll_wheel", "scroll_wheel.png", OscVisibility.ESSENTIAL,
             R.drawable.scroll_wheel, 0, 450, CONTROL_DEFAULT_SIZE, true, 0, 0, 0, 0, 0),
-        OscImageButton("crouch", "sneak.png", OscVisibility.NORMAL,
-            R.drawable.sneak, 100, 650, 113),
+        // Ctrl: обычное нажатие/удержание = приседание.
+        // Долгое удержание (650 мс) отпускает Ctrl и отправляет чистый Z,
+        // открывая меню анимаций без конфликтующего Ctrl+Z.
+        OscLongPressButton("crouch", "sneak.png", OscVisibility.NORMAL,
+            R.drawable.sneak, 100, 650, 650L,
+            longPressHandler = { sendKey(KeyEvent.KEYCODE_Z) },
+            holdKey = KeyEvent.KEYCODE_CTRL_LEFT,
+            releaseHoldOnLongPress = true),
         OscImageButton("pause_top_left", "pause.png", OscVisibility.ESSENTIAL,
             R.drawable.pause, 12, 12, KeyEvent.KEYCODE_ESCAPE),
         OscImageButton("inventory", "inventory.png", OscVisibility.NULL,

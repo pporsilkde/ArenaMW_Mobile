@@ -549,7 +549,7 @@
     <string-array name="gfx_distance_entries"><item>4096</item><item>5120</item><item>6144</item><item>8192</item><item>12288</item><item>16384</item><item>24576</item><item>32768</item><item>40960</item></string-array>
     <string-array name="gfx_terrain_entries"><item>Очень низкое</item><item>Низкое</item><item>Баланс</item><item>Среднее (максимум Android)</item></string-array>
     <string-array name="gfx_preload_entries"><item>Безопасная дистанция — 1000 / 1 поток</item></string-array>
-    <string-array name="gfx_water_entries"><item>Простая вода — 256, без преломления</item></string-array>
+    <string-array name="gfx_water_entries"><item>Простая вода — RTT 256, без преломления</item><item>Простая вода — RTT 256 + преломление</item><item>Простая вода — RTT 512 + преломление</item></string-array>
     <string-array name="gfx_shadow_entries"><item>Выключены</item><item>Игрок + персонажи</item><item>Игрок + персонажи + объекты</item></string-array>
     <string-array name="gfx_shadow_map_entries"><item>512</item><item>1024 (максимум Android)</item></string-array><string-array name="gfx_shadow_distance_entries"><item>1024</item><item>2048</item><item>4096</item><item>6144</item><item>8192 (максимум)</item></string-array>
     <string-array name="gfx_grass_entries"><item>Выключена</item><item>Низко</item><item>Баланс</item><item>Высоко</item></string-array>
