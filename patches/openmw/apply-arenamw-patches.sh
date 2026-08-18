@@ -14,7 +14,7 @@ if [ -z "$SRC" ]; then
 fi
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-PATCHSET_ID="arenamw-android-v13.7.17-01-25-moc-r21e"
+PATCHSET_ID="arenamw-android-v13.7.18-01-26-localmap-pbo"
 MARKER="$SRC/.arenamw_android_patchset"
 
 update_android_main() {
@@ -50,6 +50,20 @@ fi
 if git -C "$SRC" apply --reverse --check --whitespace=nowarn \
     "$SCRIPT_DIR/25-android-compact-display-v13-7-13.patch" >/dev/null 2>&1; then
     echo "==> adopting previously patched ArenaMW cache"
+    # V13.7.18 adds a new local-map-only patch after the old 01-25 chain.
+    # Apply it during cache adoption as well, otherwise an incremental cache would
+    # keep the Android fog-of-war PBO bug until a full clean rebuild.
+    if git -C "$SRC" apply --check --whitespace=nowarn \
+        "$SCRIPT_DIR/26-android-localmap-fog-pbo.patch" >/dev/null 2>&1; then
+        echo "==> apply 26-android-localmap-fog-pbo.patch"
+        git -C "$SRC" apply --whitespace=nowarn "$SCRIPT_DIR/26-android-localmap-fog-pbo.patch"
+    elif git -C "$SRC" apply --reverse --check --whitespace=nowarn \
+        "$SCRIPT_DIR/26-android-localmap-fog-pbo.patch" >/dev/null 2>&1; then
+        echo "==> already present 26-android-localmap-fog-pbo.patch"
+    else
+        echo "ERROR: Android local-map patch cannot be applied to adopted ArenaMW cache" >&2
+        exit 22
+    fi
     finish_patchset
     exit 0
 fi
@@ -96,6 +110,20 @@ do
     apply_patch_file "$SCRIPT_DIR/$n"
 done
 
+apply_git_patch_allow_present() {
+    p="$1"
+    name=$(basename "$p")
+    if git -C "$SRC" apply --check --whitespace=nowarn "$p" >/dev/null 2>&1; then
+        echo "==> apply $name"
+        git -C "$SRC" apply --whitespace=nowarn "$p"
+    elif git -C "$SRC" apply --reverse --check --whitespace=nowarn "$p" >/dev/null 2>&1; then
+        echo "==> already present upstream $name"
+    else
+        echo "ERROR: git patch neither applies nor is already present: $name" >&2
+        exit 22
+    fi
+}
+
 for n in \
   06-android-safe-render-v1.patch \
   07-android-complex-water-v3.patch \
@@ -117,5 +145,9 @@ for n in \
 do
     apply_git_patch "$SCRIPT_DIR/$n"
 done
+
+# This fix may also be committed directly to ArenaMW main. Accept both states so
+# the mobile builder can track main without failing after the source-side merge.
+apply_git_patch_allow_present "$SCRIPT_DIR/26-android-localmap-fog-pbo.patch"
 
 finish_patchset

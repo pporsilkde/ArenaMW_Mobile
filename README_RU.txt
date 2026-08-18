@@ -1,10 +1,18 @@
-ArenaMW Android Graphics Fixes V17.1 — поверх V16
+ArenaMW Mobile V13.7.18 — Android Local Map
+Основа: присланный ArenaMW_Mobile(4).zip.
 
-Изменения V17 сохранены: исправлены реальные дистанции теней, пресеты, ограничения shadow map 1024 / shadow distance 8192, выравнивание выбора ресурсов и удаление PBR/New water.
+Из AndroidLocalMap перенесён только single-player фикс localmap.cpp.
+MP AOI/Player/Processor изменения не используются в ArenaMW.
 
-V17.1 WATER HOTFIX:
-- Вода теперь имеет два режима: Off / Simple.
-- Simple — режим по умолчанию и режим всех графических пресетов.
-- Off полностью отключает shader water и оставляет классическую воду без шейдеров.
-- Старые New/PBR значения больше не включают PBR: движок трактует их как Simple.
-- Явно выбранный Off не должен принудительно мигрировать обратно в Simple.
+Новый patchset: arenamw-android-v13.7.18-01-26-localmap-pbo
+Новый patch: 26-android-localmap-fog-pbo.patch
+
+Applicator:
+- применяет patch 26 после 01-25;
+- применяет patch 26 и при миграции старого incremental cache;
+- допускает, что тот же фикс уже закоммичен в AMW main, и тогда пишет already present upstream вместо ошибки.
+
+Проверено:
+- чистая цепочка 01-26: PASS;
+- adoption старого cache 01-25: PASS;
+- AMW upstream уже содержит localmap fix: PASS.
