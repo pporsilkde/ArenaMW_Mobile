@@ -14,7 +14,7 @@ if [ -z "$SRC" ]; then
 fi
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-PATCHSET_ID="arenamw-android-v13.7.18-01-26-localmap-pbo"
+PATCHSET_ID="arenamw-android-v13.7.20-01-27-upstream-robust-22-24"
 MARKER="$SRC/.arenamw_android_patchset"
 
 update_android_main() {
@@ -64,6 +64,17 @@ if git -C "$SRC" apply --reverse --check --whitespace=nowarn \
         echo "ERROR: Android local-map patch cannot be applied to adopted ArenaMW cache" >&2
         exit 22
     fi
+    if git -C "$SRC" apply --check --whitespace=nowarn \
+        "$SCRIPT_DIR/27-amw-hud-cellstore-include.patch" >/dev/null 2>&1; then
+        echo "==> apply 27-amw-hud-cellstore-include.patch"
+        git -C "$SRC" apply --whitespace=nowarn "$SCRIPT_DIR/27-amw-hud-cellstore-include.patch"
+    elif git -C "$SRC" apply --reverse --check --whitespace=nowarn \
+        "$SCRIPT_DIR/27-amw-hud-cellstore-include.patch" >/dev/null 2>&1; then
+        echo "==> already present 27-amw-hud-cellstore-include.patch"
+    else
+        echo "ERROR: ArenaMW HUD CellStore hotfix cannot be applied to adopted cache" >&2
+        exit 22
+    fi
     finish_patchset
     exit 0
 fi
@@ -98,6 +109,20 @@ apply_git_patch() {
     fi
     echo "==> apply $name"
     git -C "$SRC" apply --whitespace=nowarn "$p"
+}
+
+apply_patch_file_allow_present() {
+    p="$1"
+    name=$(basename "$p")
+    if patch --dry-run -d "$SRC" -p1 -s < "$p" >/dev/null 2>&1; then
+        echo "==> apply $name"
+        patch -d "$SRC" -p1 -s < "$p"
+    elif patch --dry-run -R -d "$SRC" -p1 -s < "$p" >/dev/null 2>&1; then
+        echo "==> already present upstream $name"
+    else
+        echo "ERROR: legacy patch neither applies nor is already present: $name" >&2
+        exit 22
+    fi
 }
 
 for n in \
@@ -137,17 +162,26 @@ for n in \
   18-android-world-distance-land-v13-4.patch \
   19-android-ui-safety-controls-v13-5.patch \
   20-android-stock-actor-collision-quickloot-use-v13-6.patch \
-  21-android-water-fastpath-v13-7.patch \
-  22-android-simple-water-shadow-distance-v13-7-4.patch \
-  23-android-water-angle-stability-v13-7-5.patch \
-  24-android-disable-removed-render-effects-v13-7-12.patch \
-  25-android-compact-display-v13-7-13.patch
+  21-android-water-fastpath-v13-7.patch
 do
     apply_git_patch "$SCRIPT_DIR/$n"
 done
 
+# Patch 22 only changes mobile water defaults/migration and the independent
+# shadow-distance clamp. Keep its settings-default hunk free of branding/comment
+# context, because ArenaMW main legitimately changes ArenaMW/ArenaMP wording.
+# Also accept the whole functional change if it is later merged upstream.
+apply_patch_file_allow_present "$SCRIPT_DIR/22-android-simple-water-shadow-distance-v13-7-4.patch"
+
+apply_git_patch "$SCRIPT_DIR/23-android-water-angle-stability-v13-7-5.patch"
+# Patch 24 also touches branding-adjacent settings comments that may change in
+# ArenaMW main. Use the tolerant legacy patch path while preserving all code hunks.
+apply_patch_file_allow_present "$SCRIPT_DIR/24-android-disable-removed-render-effects-v13-7-12.patch"
+apply_git_patch "$SCRIPT_DIR/25-android-compact-display-v13-7-13.patch"
+
 # This fix may also be committed directly to ArenaMW main. Accept both states so
 # the mobile builder can track main without failing after the source-side merge.
 apply_git_patch_allow_present "$SCRIPT_DIR/26-android-localmap-fog-pbo.patch"
+apply_git_patch_allow_present "$SCRIPT_DIR/27-amw-hud-cellstore-include.patch"
 
 finish_patchset

@@ -139,10 +139,7 @@ diff --git a/files/settings-default.cfg b/files/settings-default.cfg
 index 3d07cc5..1b3a442 100644
 --- a/files/settings-default.cfg
 +++ b/files/settings-default.cfg
-@@ -388,7 +388,7 @@ material quality = balanced
- 
- # Enhanced PBR compatibility layer adapted for ArenaMW 0.47. These controls
- # are runtime uniforms and do not replace the existing HDR/Bloom pipeline.
+@@ -390,4 +390,4 @@
 -enhanced pbr lighting = true
 +enhanced pbr lighting = false
  pbr diffuse response = 1.00

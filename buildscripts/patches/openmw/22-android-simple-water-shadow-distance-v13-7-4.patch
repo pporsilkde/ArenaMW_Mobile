@@ -92,14 +92,8 @@ diff --git a/files/settings-default.cfg b/files/settings-default.cfg
 index 124cdc1..4f3b777 100644
 --- a/files/settings-default.cfg
 +++ b/files/settings-default.cfg
-@@ -510,13 +510,14 @@ object display lists = true
- 
- [Water]
- # Water rendering mode: off, simple, new.
--# "simple" uses ArenaMW legacy water shaders; "new" uses the current PBR water.
+@@ -512,6 +512,6 @@
 -shader mode = new
-+# Android/mobile default: use the stable simple shader-water path.
-+# The PBR/new path remains in source for future work but is not exposed by this build.
 +shader mode = simple
  # Legacy compatibility key kept in sync by the in-game selector.
  shader = true
@@ -109,6 +103,3 @@ index 124cdc1..4f3b777 100644
 +rtt size = 256
 +refraction = false
 +reflection detail = 2
- 
- # Runtime caustics multiplier. Valid UI range: 0.0 to 3.0.
- caustics intensity = 1.0
