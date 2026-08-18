@@ -1,18 +1,11 @@
-ArenaMW Mobile V13.7.18 — Android Local Map
-Основа: присланный ArenaMW_Mobile(4).zip.
+ArenaMW Mobile V13.7.20 cumulative changed files
 
-Из AndroidLocalMap перенесён только single-player фикс localmap.cpp.
-MP AOI/Player/Processor изменения не используются в ArenaMW.
+Содержит cumulative Android fixes:
+- patch 22: устойчивое применение simple-water/shadow-distance при изменениях комментариев upstream;
+- patch 24: устойчивое отключение удалённых Android render effects при изменениях ArenaMW/ArenaMP комментариев;
+- patch 26: Android LocalMap fog-of-war PBO fix;
+- patch 27: HUD CellStore include FIX30;
+- обновлённый apply-arenamw-patches.sh.
 
-Новый patchset: arenamw-android-v13.7.18-01-26-localmap-pbo
-Новый patch: 26-android-localmap-fog-pbo.patch
-
-Applicator:
-- применяет patch 26 после 01-25;
-- применяет patch 26 и при миграции старого incremental cache;
-- допускает, что тот же фикс уже закоммичен в AMW main, и тогда пишет already present upstream вместо ошибки.
-
-Проверено:
-- чистая цепочка 01-26: PASS;
-- adoption старого cache 01-25: PASS;
-- AMW upstream уже содержит localmap fix: PASS.
+Patchset marker:
+arenamw-android-v13.7.20-01-27-upstream-robust-22-24
