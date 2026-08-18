@@ -616,8 +616,13 @@ class Osc {
             R.drawable.toggle_magic, 965, 470, KeyEvent.KEYCODE_R),
         OscImageButton("weapon", "toggle_weapon.png", OscVisibility.NORMAL,
             R.drawable.toggle_weapon, 965, 560, KeyEvent.KEYCODE_F),
-        OscImageButton("journal", "journal.png", OscVisibility.NORMAL,
-            R.drawable.journal, 965, 650, KeyEvent.KEYCODE_J),
+        // Journal: короткий тап = обычная J.
+        // Долгое удержание (650 мс) эмулирует клавишу ` / ~ (KEYCODE_GRAVE),
+        // открывая игровую консоль. J при long-press не отправляется.
+        OscLongPressButton("journal", "journal.png", OscVisibility.NORMAL,
+            R.drawable.journal, 965, 650, 650L,
+            longPressHandler = { sendKey(KeyEvent.KEYCODE_GRAVE) },
+            shortHandler = { sendKey(KeyEvent.KEYCODE_J) }),
         OscAttackButton("fire", "attack.png", OscVisibility.ESSENTIAL,
             R.drawable.attack, 800, 315, 1, 120),
         OscImageButton("use", "use.png", OscVisibility.NORMAL,
