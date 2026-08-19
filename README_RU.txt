@@ -1,11 +1,33 @@
-ArenaMW Mobile V13.7.20 cumulative changed files
+ArenaMW Android — справка по экранному управлению + J long-press console
+База: ArenaMW Mobile V13.7.20
 
-Содержит cumulative Android fixes:
-- patch 22: устойчивое применение simple-water/shadow-distance при изменениях комментариев upstream;
-- patch 24: устойчивое отключение удалённых Android render effects при изменениях ArenaMW/ArenaMP комментариев;
-- patch 26: Android LocalMap fog-of-war PBO fix;
-- patch 27: HUD CellStore include FIX30;
-- обновлённый apply-arenamw-patches.sh.
+Установка:
+1. Распаковать этот архив в корень Android-проекта ArenaMW Mobile.
+2. Согласиться на замену файлов.
+3. Пересобрать APK обычным способом.
 
-Patchset marker:
-arenamw-android-v13.7.20-01-27-upstream-robust-22-24
+Что добавлено:
+- В редакторе «Экранное управление» появилась кнопка «Описание управления».
+- По нажатию открывается большое прокручиваемое окно.
+- Каждый пункт содержит иконку, название действия и подробное описание.
+- Справка локализована RU/EN.
+- Описаны левый/правый стик, атака, взаимодействие, прыжок, скрытность,
+  Esc, инвентарь, ожидание, магия, оружие, журнал/консоль, прокрутка,
+  угловая кнопка клавиатура/F11/F12 и быстрые слоты 0–9.
+- Сохранено предыдущее поведение Journal:
+  короткий тап J = журнал;
+  удержание 650 мс = ` / ~ = открыть консоль.
+
+Заменяемые файлы:
+app/src/main/java/ui/activity/ConfigureControls.kt
+app/src/main/java/ui/controls/Osc.kt
+app/src/main/res/layout/configure_controls.xml
+app/src/main/res/values/strings.xml
+app/src/main/res/values-ru/strings.xml
+
+Проверки:
+- XML успешно разобраны парсером.
+- Все новые drawable/color/string ресурсы существуют.
+- git diff --check для изменённых файлов проходит.
+- Полная Gradle-компиляция в текущем окружении не запускалась: wrapper пытается
+  скачать Gradle 6.1.1, а сетевой доступ из контейнера отсутствует.

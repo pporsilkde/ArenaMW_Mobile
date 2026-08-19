@@ -810,4 +810,39 @@
     <string name="filechooser_folder_error">Could not create folder. Try again.</string>
     <string name="filechooser_folder_name">Folder name</string>
     <string name="filechooser_empty_folder_name">Enter a folder name</string>
+
+    <!-- ArenaMW on-screen controls help -->
+    <string name="btn_controlsHelp">Controls guide</string>
+    <string name="controls_help_title">On-screen controls</string>
+    <string name="controls_help_move_title">Left stick — movement</string>
+    <string name="controls_help_move_desc">Move forward, backward and sideways. The touch field covers the left half of the gameplay area.</string>
+    <string name="controls_help_look_title">Right stick — camera</string>
+    <string name="controls_help_look_desc">Look around and turn the camera by dragging on the right side of the screen.</string>
+    <string name="controls_help_attack_title">Attack</string>
+    <string name="controls_help_attack_desc">Primary attack. While holding the button, dragging also adjusts the camera/aim.</string>
+    <string name="controls_help_use_title">Use / interact</string>
+    <string name="controls_help_use_desc">Emulates E: activate doors, NPCs, containers and objects.</string>
+    <string name="controls_help_jump_title">Jump</string>
+    <string name="controls_help_jump_desc">Hold = Space (jump / swim up). Hold for 1 second to additionally send Q.</string>
+    <string name="controls_help_sneak_title">Sneak</string>
+    <string name="controls_help_sneak_desc">Press/hold = Ctrl. Hold for 650 ms to release Ctrl and send Z (animation menu).</string>
+    <string name="controls_help_pause_title">Menu / Escape</string>
+    <string name="controls_help_pause_desc">Emulates Esc: open the game menu or close the current window.</string>
+    <string name="controls_help_inventory_title">Inventory</string>
+    <string name="controls_help_inventory_desc">Opens the character interface/inventory by emulating the game mouse button.</string>
+    <string name="controls_help_wait_title">Wait</string>
+    <string name="controls_help_wait_desc">Emulates T and opens the wait/rest window when the game allows it.</string>
+    <string name="controls_help_magic_title">Magic</string>
+    <string name="controls_help_magic_desc">Emulates R: ready or lower the selected spell/magic action.</string>
+    <string name="controls_help_weapon_title">Weapon</string>
+    <string name="controls_help_weapon_desc">Emulates F: ready or lower the equipped weapon.</string>
+    <string name="controls_help_journal_title">Journal / console</string>
+    <string name="controls_help_journal_desc">Short tap = J (journal). Hold for 650 ms = ` / ~ (open the console).</string>
+    <string name="controls_help_scroll_title">Scroll</string>
+    <string name="controls_help_scroll_desc">Swipe vertically to emulate the mouse wheel in lists, menus and other scrollable windows.</string>
+    <string name="controls_help_corner_title">Keyboard / F11 / F12</string>
+    <string name="controls_help_corner_desc">During text input the corner button shows/hides the on-screen keyboard. Otherwise: double tap = F11, hold = F12.</string>
+    <string name="controls_help_quick_title">Quick slots 0–9</string>
+    <string name="controls_help_quick_desc">Open the radial quick-slot selector and drag toward a slot to activate keys 0–9.</string>
+    <string name="controls_help_note">Custom buttons loaded from launcher/controls.cfg can add more actions and may differ from this built-in guide.</string>
 </resources>

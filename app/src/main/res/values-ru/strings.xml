@@ -573,4 +573,39 @@
     <string name="filechooser_folder_error">Не удалось создать папку. Попробуйте ещё раз.</string>
     <string name="filechooser_folder_name">Имя папки</string>
     <string name="filechooser_empty_folder_name">Введите имя папки</string>
+
+    <!-- Справка по экранному управлению ArenaMW -->
+    <string name="btn_controlsHelp">Описание управления</string>
+    <string name="controls_help_title">Экранное управление</string>
+    <string name="controls_help_move_title">Левый стик — движение</string>
+    <string name="controls_help_move_desc">Движение вперёд, назад и в стороны. Сенсорная зона занимает левую половину игровой области.</string>
+    <string name="controls_help_look_title">Правый стик — камера</string>
+    <string name="controls_help_look_desc">Осмотр и поворот камеры движением пальца по правой части экрана.</string>
+    <string name="controls_help_attack_title">Атака</string>
+    <string name="controls_help_attack_desc">Основная атака. Если удерживать кнопку и двигать палец, можно одновременно корректировать камеру/прицел.</string>
+    <string name="controls_help_use_title">Использовать / взаимодействие</string>
+    <string name="controls_help_use_desc">Эмулирует E: двери, NPC, контейнеры и другие интерактивные объекты.</string>
+    <string name="controls_help_jump_title">Прыжок</string>
+    <string name="controls_help_jump_desc">Удержание = Space (прыжок / всплытие). Удержание 1 секунду дополнительно отправляет Q.</string>
+    <string name="controls_help_sneak_title">Приседание / скрытность</string>
+    <string name="controls_help_sneak_desc">Нажатие/удержание = Ctrl. Удержание 650 мс отпускает Ctrl и отправляет Z — меню анимаций.</string>
+    <string name="controls_help_pause_title">Меню / Escape</string>
+    <string name="controls_help_pause_desc">Эмулирует Esc: открывает игровое меню или закрывает текущее окно.</string>
+    <string name="controls_help_inventory_title">Инвентарь</string>
+    <string name="controls_help_inventory_desc">Открывает интерфейс персонажа/инвентарь через штатную эмуляцию игровой кнопки мыши.</string>
+    <string name="controls_help_wait_title">Ожидание</string>
+    <string name="controls_help_wait_desc">Эмулирует T и открывает окно ожидания/отдыха, когда это разрешено игрой.</string>
+    <string name="controls_help_magic_title">Магия</string>
+    <string name="controls_help_magic_desc">Эмулирует R: подготовить или убрать выбранное заклинание/магическое действие.</string>
+    <string name="controls_help_weapon_title">Оружие</string>
+    <string name="controls_help_weapon_desc">Эмулирует F: достать или убрать экипированное оружие.</string>
+    <string name="controls_help_journal_title">Журнал / консоль</string>
+    <string name="controls_help_journal_desc">Короткое нажатие = J (журнал). Удержание 650 мс = ` / ~ (открыть консоль).</string>
+    <string name="controls_help_scroll_title">Прокрутка</string>
+    <string name="controls_help_scroll_desc">Вертикальный свайп эмулирует колесо мыши в списках, меню и других прокручиваемых окнах.</string>
+    <string name="controls_help_corner_title">Клавиатура / F11 / F12</string>
+    <string name="controls_help_corner_desc">Во время текстового ввода угловая кнопка показывает/скрывает экранную клавиатуру. Вне ввода: двойной тап = F11, удержание = F12.</string>
+    <string name="controls_help_quick_title">Быстрые слоты 0–9</string>
+    <string name="controls_help_quick_desc">Открывает радиальный выбор быстрых слотов; проведите к нужному сектору для активации клавиш 0–9.</string>
+    <string name="controls_help_note">Пользовательские кнопки из launcher/controls.cfg могут добавлять дополнительные действия и отличаться от этой встроенной справки.</string>
 </resources>
