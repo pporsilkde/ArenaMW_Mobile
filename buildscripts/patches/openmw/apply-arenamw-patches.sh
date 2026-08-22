@@ -14,7 +14,7 @@ if [ -z "$SRC" ]; then
 fi
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-PATCHSET_ID="arenamw-android-v13.7.20-01-27-upstream-robust-22-24"
+PATCHSET_ID="arenamw-android-v13.8-01-28-stable-shadows"
 MARKER="$SRC/.arenamw_android_patchset"
 
 update_android_main() {
@@ -73,6 +73,17 @@ if git -C "$SRC" apply --reverse --check --whitespace=nowarn \
         echo "==> already present 27-amw-hud-cellstore-include.patch"
     else
         echo "ERROR: ArenaMW HUD CellStore hotfix cannot be applied to adopted cache" >&2
+        exit 22
+    fi
+    if git -C "$SRC" apply --check --whitespace=nowarn \
+        "$SCRIPT_DIR/28-android-stable-shadows-v13-8.patch" >/dev/null 2>&1; then
+        echo "==> apply 28-android-stable-shadows-v13-8.patch"
+        git -C "$SRC" apply --whitespace=nowarn "$SCRIPT_DIR/28-android-stable-shadows-v13-8.patch"
+    elif git -C "$SRC" apply --reverse --check --whitespace=nowarn \
+        "$SCRIPT_DIR/28-android-stable-shadows-v13-8.patch" >/dev/null 2>&1; then
+        echo "==> already present 28-android-stable-shadows-v13-8.patch"
+    else
+        echo "ERROR: Android stable-shadow patch cannot be applied to adopted cache" >&2
         exit 22
     fi
     finish_patchset
@@ -183,5 +194,9 @@ apply_git_patch "$SCRIPT_DIR/25-android-compact-display-v13-7-13.patch"
 # the mobile builder can track main without failing after the source-side merge.
 apply_git_patch_allow_present "$SCRIPT_DIR/26-android-localmap-fog-pbo.patch"
 apply_git_patch_allow_present "$SCRIPT_DIR/27-amw-hud-cellstore-include.patch"
+
+# Mobile shadow quality: correct compare-then-filter PCF for the GLES sampling path plus
+# rotation-invariant, texel-snapped cascades. Depends on patches 10 and 11.
+apply_git_patch "$SCRIPT_DIR/28-android-stable-shadows-v13-8.patch"
 
 finish_patchset

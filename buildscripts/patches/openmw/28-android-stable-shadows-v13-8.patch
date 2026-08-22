@@ -1,0 +1,643 @@
+diff --git a/apps/openmw/mwrender/renderingmanager.cpp b/apps/openmw/mwrender/renderingmanager.cpp
+index 0e5f95e..5e2d554 100644
+--- a/apps/openmw/mwrender/renderingmanager.cpp
++++ b/apps/openmw/mwrender/renderingmanager.cpp
+@@ -190,6 +190,13 @@ namespace MWRender
+             stateset->addUniform(new osg::Uniform("arenaShadowSoftness", 1.0f));
+             stateset->addUniform(new osg::Uniform("arenaShadowAdaptiveSoftness", 1.0f));
+             stateset->addUniform(new osg::Uniform("arenaShadowTexelSize", 1.0f / 512.0f));
++            // GLES shadow filtering. arenaShadowMapSize lets the fragment shader address
++            // individual texels, arenaShadowPenumbraWorld fixes the penumbra width in world
++            // units so it does not change between cascades, and arenaShadowDepthBias is the
++            // manual-comparison safety net on top of the normal/polygon offsets.
++            stateset->addUniform(new osg::Uniform("arenaShadowMapSize", 512.0f));
++            stateset->addUniform(new osg::Uniform("arenaShadowPenumbraWorld", 10.0f));
++            stateset->addUniform(new osg::Uniform("arenaShadowDepthBias", 0.00035f));
+         }
+ 
+         void apply(osg::StateSet* stateset, osg::NodeVisitor*) override
+@@ -249,6 +256,16 @@ namespace MWRender
+                     = std::clamp(Settings::Manager::getInt("shadow map resolution", "Shadows"), 1, 1024);
+                 uniform->set(1.0f / static_cast<float>(shadowMapResolution));
+             }
++            if (osg::Uniform* uniform = stateset->getUniform("arenaShadowMapSize"))
++            {
++                const int shadowMapResolution
++                    = std::clamp(Settings::Manager::getInt("shadow map resolution", "Shadows"), 1, 1024);
++                uniform->set(static_cast<float>(shadowMapResolution));
++            }
++            if (osg::Uniform* uniform = stateset->getUniform("arenaShadowPenumbraWorld"))
++                uniform->set(std::clamp(Settings::Manager::getFloat("penumbra world size", "Shadows"), 0.f, 64.f));
++            if (osg::Uniform* uniform = stateset->getUniform("arenaShadowDepthBias"))
++                uniform->set(std::clamp(Settings::Manager::getFloat("gles depth bias", "Shadows"), 0.f, 0.01f));
+         }
+ 
+         void setAmbientColor(const osg::Vec4f& col)
+@@ -2256,7 +2273,9 @@ namespace MWRender
+                 // the user drags these sliders.
+                 if (setting.second != "enhanced filtering"
+                     && setting.second != "filter softness"
+-                    && setting.second != "adaptive softness")
++                    && setting.second != "adaptive softness"
++                    && setting.second != "penumbra world size"
++                    && setting.second != "gles depth bias")
+                 {
+                     refreshShadowSettings = true;
+                     refreshShaderDefines = true;
+diff --git a/components/sceneutil/mwshadowtechnique.cpp b/components/sceneutil/mwshadowtechnique.cpp
+index c87d09d..c60a471 100644
+--- a/components/sceneutil/mwshadowtechnique.cpp
++++ b/components/sceneutil/mwshadowtechnique.cpp
+@@ -24,6 +24,7 @@
+ #include <osg/io_utils>
+ #include <osg/Depth>
+ 
++#include <cmath>
+ #include <sstream>
+ #include "shadowsbin.hpp"
+ 
+@@ -559,8 +560,18 @@ MWShadowTechnique::ShadowData::ShadowData(MWShadowTechnique::ViewDependentData*
+ #endif
+     }
+ 
++#if defined(__ANDROID__)
++    // Depth textures are not required to be filterable in OpenGL ES, and on most mobile drivers
++    // LINEAR silently degrades to NEAREST here. Ask for NEAREST explicitly so behaviour is
++    // identical on every adapter: shadows_fragment.glsl fetches the four neighbouring texels and
++    // interpolates the *comparison results*, which is the only correct order for depth and is
++    // exactly what a hardware sampler2DShadow would do.
++    _texture->setFilter(osg::Texture2D::MIN_FILTER,osg::Texture2D::NEAREST);
++    _texture->setFilter(osg::Texture2D::MAG_FILTER,osg::Texture2D::NEAREST);
++#else
+     _texture->setFilter(osg::Texture2D::MIN_FILTER,osg::Texture2D::LINEAR);
+     _texture->setFilter(osg::Texture2D::MAG_FILTER,osg::Texture2D::LINEAR);
++#endif
+ 
+     // the shadow comparison should fail if object is outside the texture
+ #if defined(__ANDROID__)
+@@ -900,6 +911,11 @@ void SceneUtil::MWShadowTechnique::setMaximumShadowMapDistance(float maximumShad
+     }
+ }
+ 
++void SceneUtil::MWShadowTechnique::setStabilizeCascades(bool stabilize)
++{
++    _stabilizeCascades = stabilize;
++}
++
+ void SceneUtil::MWShadowTechnique::enableFrontFaceCulling()
+ {
+     _useFrontFaceCulling = true;
+@@ -1097,6 +1113,19 @@ void MWShadowTechnique::cull(osgUtil::CullVisitor& cv)
+     // return compute near far mode back to it's original settings
+     cv.setComputeNearFarMode(cachedNearFarMode);
+ 
++    // The cascade split distances derived from reducedNear/reducedFar depend on what happens
++    // to be visible in this particular frame, so they move as soon as the player turns around.
++    // Texel snapping can only stabilise a cascade whose size is constant, so when stabilisation
++    // is requested the splits are taken from the camera's own near plane and the configured
++    // maximum shadow distance instead. Both are frame invariant.
++    double splitNear = reducedNear;
++    double splitFar = reducedFar;
++    if (_stabilizeCascades && minZNear > 0.0 && maxZFar > minZNear && maxZFar < dbl_max)
++    {
++        splitNear = minZNear;
++        splitFar = maxZFar;
++    }
++
+     OSG_INFO<<"frustum.eye="<<frustum.eye<<", frustum.centerNearPlane, "<<frustum.centerNearPlane<<" distance = "<<(frustum.eye-frustum.centerNearPlane).length()<<std::endl;
+ 
+ 
+@@ -1282,8 +1311,8 @@ void MWShadowTechnique::cull(osgUtil::CullVisitor& cv)
+             osg::Polytope local_polytope(polytope);
+             local_polytope.transformProvidingInverse(invertModelView);
+ 
+-            double cascaseNear = reducedNear;
+-            double cascadeFar = reducedFar;
++            double cascaseNear = splitNear;
++            double cascadeFar = splitFar;
+             if (numShadowMapsPerLight>1)
+             {
+                 // compute the start and end range in non-dimensional coords
+@@ -1299,8 +1328,8 @@ void MWShadowTechnique::cull(osgUtil::CullVisitor& cv)
+                 double r_start, r_end;
+ 
+                 // split system based on the original Parallel Split Shadow Maps paper.
+-                double n = reducedNear;
+-                double f = reducedFar;
++                double n = splitNear;
++                double f = splitFar;
+                 double i = double(sm_i);
+                 double m = double(numShadowMapsPerLight);
+                 if (sm_i == 0)
+@@ -1400,7 +1429,7 @@ void MWShadowTechnique::cull(osgUtil::CullVisitor& cv)
+                 local_polytope.setupMask();
+             }
+             else
+-                cropShadowCameraToMainFrustum(frustum, camera, reducedNear, reducedFar, extraPlanes);
++                cropShadowCameraToMainFrustum(frustum, camera, splitNear, splitFar, extraPlanes);
+ 
+             osg::ref_ptr<VDSMCameraCullCallback> vdsmCallback = new VDSMCameraCullCallback(this, local_polytope);
+             camera->setCullCallback(vdsmCallback.get());
+@@ -1478,6 +1507,39 @@ void MWShadowTechnique::cull(osgUtil::CullVisitor& cv)
+                 _uniforms[cv.getTraversalNumber() % 2].push_back(shadowMatrixUniform);
+             }
+             shadowMatrixUniform->set(shadowTextureMatrix);
++
++            // How many world units one texel of *this* cascade covers. The receiving shader uses
++            // it to keep the penumbra the same physical width in every cascade, which is what
++            // removes the visible seam where one cascade hands over to the next.
++            {
++                const osg::Matrixd& finalProjection = camera->getProjectionMatrix();
++                const double lightSpaceScaleX = osg::Vec3d(finalProjection(0,0),
++                                                           finalProjection(1,0),
++                                                           finalProjection(2,0)).length();
++                const osg::Vec2s cascadeTextureSize = settings->getTextureSize();
++                const double cascadeResolution = osg::maximum(1, static_cast<int>(cascadeTextureSize.x()));
++                const float texelWorldSize = lightSpaceScaleX > 0.0
++                    ? static_cast<float>(2.0 / (lightSpaceScaleX * cascadeResolution))
++                    : 1.0f;
++
++                const std::string texelWorldUniformName = "arenaShadowTexelWorld" + std::to_string(sm_i);
++                osg::ref_ptr<osg::Uniform> texelWorldUniform;
++                for (auto uniform : _uniforms[cv.getTraversalNumber() % 2])
++                {
++                    if (uniform->getName() == texelWorldUniformName)
++                    {
++                        texelWorldUniform = uniform;
++                        break;
++                    }
++                }
++
++                if (!texelWorldUniform)
++                {
++                    texelWorldUniform = new osg::Uniform(osg::Uniform::FLOAT, texelWorldUniformName);
++                    _uniforms[cv.getTraversalNumber() % 2].push_back(texelWorldUniform);
++                }
++                texelWorldUniform->set(texelWorldSize);
++            }
+ #else
+             // Desktop compatibility path keeps OSG's fixed-function EYE_LINEAR
+             // TexGen and the legacy gl_EyePlane* shader built-ins.
+@@ -2613,12 +2675,110 @@ struct RenderLeafBounds
+     double min_z, max_z;
+ };
+ 
++bool MWShadowTechnique::stabilizeShadowCameraToFrustumSlice(Frustum& frustum, osg::Camera* camera, double viewNear, double viewFar, std::vector<osg::Plane>& planeList)
++{
++    const osg::Matrixd light_p = camera->getProjectionMatrix();
++    const osg::Matrixd light_v = camera->getViewMatrix();
++
++    double left, right, bottom, top, zNear, zFar;
++    if (!light_p.getOrtho(left, right, bottom, top, zNear, zFar))
++        return false;
++
++    // 1. Rebuild this cascade's slice of the main view frustum in world space. Frustum corners
++    //    0,1,5,4 lie on the near plane and 3,2,6,7 on the matching far plane, so each pair shares
++    //    a ray from the eye and can be interpolated by distance along the frustum centre line.
++    static const unsigned int sNearCorner[4] = { 0, 1, 5, 4 };
++    static const unsigned int sFarCorner[4]  = { 3, 2, 6, 7 };
++
++    const double nearDistance = (frustum.centerNearPlane - frustum.eye) * frustum.frustumCenterLine;
++    const double farDistance = (frustum.centerFarPlane - frustum.eye) * frustum.frustumCenterLine;
++    const double span = farDistance - nearDistance;
++    if (span <= 0.0)
++        return false;
++
++    const double tNear = osg::clampBetween((viewNear - nearDistance) / span, 0.0, 1.0);
++    const double tFar = osg::clampBetween((viewFar - nearDistance) / span, 0.0, 1.0);
++    if (tFar <= tNear)
++        return false;
++
++    osg::Vec3d sliceCorners[8];
++    for (unsigned int i = 0; i < 4; ++i)
++    {
++        const osg::Vec3d& nearCorner = frustum.corners[sNearCorner[i]];
++        const osg::Vec3d& farCorner = frustum.corners[sFarCorner[i]];
++        const osg::Vec3d edge = farCorner - nearCorner;
++        sliceCorners[i] = nearCorner + edge * tNear;
++        sliceCorners[i + 4] = nearCorner + edge * tFar;
++    }
++
++    // 2. Fit a sphere rather than a light space box. The slice is a rigid body, so the radius of
++    //    its bounding sphere is the same no matter which way the camera is pointing. That is what
++    //    keeps the world size of a shadow texel - and hence the sharpness of the shadow edge -
++    //    constant while the player looks around, instead of jumping whenever the light space
++    //    bounding box happens to grow.
++    osg::Vec3d sphereCenter(0.0, 0.0, 0.0);
++    for (const osg::Vec3d& corner : sliceCorners)
++        sphereCenter += corner;
++    sphereCenter /= 8.0;
++
++    double radius = 0.0;
++    for (const osg::Vec3d& corner : sliceCorners)
++        radius = osg::maximum(radius, (corner - sphereCenter).length());
++    if (radius <= 0.0)
++        return false;
++
++    // 3. Everything below happens in the light's view space, where one shadow map texel covers a
++    //    fixed number of world units.
++    const osg::Vec2s textureSize = getShadowedScene()->getShadowSettings()->getTextureSize();
++    const double resolution = osg::maximum(1, static_cast<int>(textureSize.x()));
++    const double texelWorldSize = 2.0 * radius / resolution;
++
++    const osg::Vec3d center_lv = sphereCenter * light_v;
++
++    // Snap the cascade origin to whole texels. Without this the same silhouette lands in a
++    // slightly different texel every frame and the shadow edge visibly crawls and shimmers.
++    const double snappedX = std::floor(center_lv.x() / texelWorldSize) * texelWorldSize;
++    const double snappedY = std::floor(center_lv.y() / texelWorldSize) * texelWorldSize;
++
++    // Anything further from the light than the far side of the slice cannot shadow the slice, so
++    // the far plane can be pulled in for depth precision. The near plane is left alone because
++    // casters between the light and the slice must still be rasterised.
++    double minZ = dbl_max;
++    for (const osg::Vec3d& corner : sliceCorners)
++        minZ = osg::minimum(minZ, (corner * light_v).z());
++
++    const double tightenedFar = osg::minimum(zFar, -minZ + 2.0 * texelWorldSize);
++    if (tightenedFar > zNear)
++        zFar = tightenedFar;
++
++    camera->setProjectionMatrix(osg::Matrixd::ortho(snappedX - radius, snappedX + radius,
++                                                    snappedY - radius, snappedY + radius,
++                                                    zNear, zFar));
++
++    // Caster culling planes, expressed in light view space exactly as the unstabilised path does.
++    planeList.emplace_back(0.0, -1.0, 0.0, snappedY + radius);
++    planeList.emplace_back(0.0, 1.0, 0.0, -(snappedY - radius));
++    planeList.emplace_back(-1.0, 0.0, 0.0, snappedX + radius);
++    planeList.emplace_back(1.0, 0.0, 0.0, -(snappedX - radius));
++    // In view space, the light is at the most positive value, and we want to cull stuff beyond the minimum value.
++    planeList.emplace_back(0.0, 0.0, 1.0, -minZ);
++
++    return true;
++}
++
+ bool MWShadowTechnique::cropShadowCameraToMainFrustum(Frustum& frustum, osg::Camera* camera, double viewNear, double viewFar, std::vector<osg::Plane>& planeList)
+ {
+     osg::Matrixd light_p = camera->getProjectionMatrix();
+     osg::Matrixd light_v = camera->getViewMatrix();
+     osg::Matrixd light_vp = light_v * light_p;
+     osg::Matrixd oldLightP = light_p;
++
++    // A perspective (LiSPSM) light projection cannot be texel snapped, and the warp it applies is
++    // itself a function of the angle between the view direction and the light, so stabilisation
++    // only runs on an orthographic light projection. ShadowManager forces that combination.
++    const bool orthographicLightProjection = light_p(0,3) == 0.0 && light_p(1,3) == 0.0 && light_p(2,3) == 0.0;
++    if (_stabilizeCascades && orthographicLightProjection)
++        return stabilizeShadowCameraToFrustumSlice(frustum, camera, viewNear, viewFar, planeList);
+     
+     ConvexHull convexHull;
+     convexHull.setToFrustum(frustum);
+diff --git a/components/sceneutil/mwshadowtechnique.hpp b/components/sceneutil/mwshadowtechnique.hpp
+index 756dd57..04e8b5d 100644
+--- a/components/sceneutil/mwshadowtechnique.hpp
++++ b/components/sceneutil/mwshadowtechnique.hpp
+@@ -24,6 +24,7 @@
+ 
+ #include <osg/Camera>
+ #include <osg/Material>
++#include <osg/Math>
+ #include <osg/MatrixTransform>
+ #include <osg/LightSource>
+ #include <osg/PolygonOffset>
+@@ -83,6 +84,12 @@ namespace SceneUtil {
+ 
+         virtual void setMaximumShadowMapDistance(float maximumShadowMapDistance);
+ 
++        /// Fit every cascade to the bounding sphere of its view-frustum slice and snap the
++        /// result to the shadow map's texel grid. The sphere is invariant under camera
++        /// rotation, so the world size of a shadow texel stops changing when the player looks
++        /// around, which removes both the sudden quality drops and the crawling shadow edges.
++        virtual void setStabilizeCascades(bool stabilize);
++
+         virtual void enableFrontFaceCulling();
+ 
+         virtual void disableFrontFaceCulling();
+@@ -227,6 +234,10 @@ namespace SceneUtil {
+ 
+         virtual bool cropShadowCameraToMainFrustum(Frustum& frustum, osg::Camera* camera, double viewNear, double viewFar, std::vector<osg::Plane>& planeList);
+ 
++        /// Rotation invariant, texel snapped replacement for cropShadowCameraToMainFrustum, used
++        /// when cascade stabilisation is enabled and the light projection is orthographic.
++        virtual bool stabilizeShadowCameraToFrustumSlice(Frustum& frustum, osg::Camera* camera, double viewNear, double viewFar, std::vector<osg::Plane>& planeList);
++
+         virtual bool adjustPerspectiveShadowMapCameraSettings(osgUtil::RenderStage* renderStage, Frustum& frustum, LightData& positionedLight, osg::Camera* camera, double viewNear, double viewFar);
+ 
+         virtual bool assignTexGenSettings(osgUtil::CullVisitor* cv, osg::Camera* camera, unsigned int textureUnit, osg::TexGen* texgen);
+@@ -266,6 +277,8 @@ namespace SceneUtil {
+ 
+         bool                                    _useFrontFaceCulling = true;
+ 
++        bool                                    _stabilizeCascades = false;
++
+         float                                   _shadowFadeStart = 0.0;
+ 
+         class DebugHUD final : public osg::Referenced
+diff --git a/components/sceneutil/shadow.cpp b/components/sceneutil/shadow.cpp
+index e8fabb1..babf81c 100644
+--- a/components/sceneutil/shadow.cpp
++++ b/components/sceneutil/shadow.cpp
+@@ -62,6 +62,21 @@ namespace SceneUtil
+         else
+             mShadowTechnique->disableFrontFaceCulling();
+ 
++        // Perspective (LiSPSM) shadow maps warp the shadow map by the angle between the view
++        // direction and the light, so their quality is a function of where the player is looking -
++        // that is what makes the shadow edge suddenly degrade mid-turn. Cascade stabilisation
++        // requires a texel grid that does not move, which a warped projection cannot provide, so
++        // the two are mutually exclusive and stabilisation wins.
++        const bool stabilizeCascades = Settings::Manager::getBool("stabilize cascades", "Shadows");
++        const bool perspectiveShadowMaps = Settings::Manager::getBool("perspective shadow maps", "Shadows");
++
++        mShadowTechnique->setStabilizeCascades(stabilizeCascades);
++
++        if (perspectiveShadowMaps && !stabilizeCascades)
++            mShadowSettings->setShadowMapProjectionHint(osgShadow::ShadowSettings::PERSPECTIVE_SHADOW_MAP);
++        else
++            mShadowSettings->setShadowMapProjectionHint(osgShadow::ShadowSettings::ORTHOGRAPHIC_SHADOW_MAP);
++
+         if (Settings::Manager::getBool("allow shadow map overlap", "Shadows"))
+             mShadowSettings->setMultipleShadowMapHint(osgShadow::ShadowSettings::CASCADED);
+         else
+diff --git a/files/settings-default.cfg b/files/settings-default.cfg
+index 42220c8..5a5fce0 100644
+--- a/files/settings-default.cfg
++++ b/files/settings-default.cfg
+@@ -821,7 +821,10 @@ split point bias = 0.0
+ enable debug hud = false
+ enable debug overlay = false
+ compute scene bounds = bounds
+-shadow map resolution = 512
++# Stabilised cascades are fitted to a sphere rather than a box, which costs roughly 40% of the
++# linear texel density, so the default resolution is raised to keep the edge at least as sharp as
++# before. Two 1024 maps use about the same memory as three 512 ones did.
++shadow map resolution = 1024
+ minimum lispsm near far ratio = 0.25
+ polygon offset factor = 1.1
+ polygon offset units = 4.0
+@@ -839,6 +842,28 @@ enhanced filtering = true
+ filter softness = 1.00
+ adaptive softness = true
+ 
++# Cascade stabilisation. Each cascade is fitted to the bounding sphere of its slice of the view
++# frustum and snapped to the shadow map's texel grid. The sphere does not change size when the
++# camera rotates, so the world size of a shadow texel - and therefore the sharpness of the shadow
++# edge - stays constant instead of dropping when the light space bounding box happens to grow.
++# The snapping stops shadow edges from crawling while the camera moves.
++stabilize cascades = true
++
++# Perspective (LiSPSM) shadow maps. They warp the shadow map by the angle between the view
++# direction and the light, which is a further source of angle dependent quality changes, and they
++# cannot be texel snapped. Ignored while 'stabilize cascades' is enabled.
++perspective shadow maps = false
++
++# Target penumbra width in world units for the GLES sampling path. The filter radius is derived
++# from this and the world size of a texel in the cascade being sampled, so the penumbra keeps the
++# same physical width in every cascade and no seam appears where cascades hand over.
++penumbra world size = 10.0
++
++# Receiver depth bias for the GLES path, which compares depth in the shader rather than in fixed
++# function hardware. The normal and polygon offsets above remain the primary acne control; raise
++# this only if acne appears after increasing the shadow map resolution.
++gles depth bias = 0.00035
++
+ 
+ [Physics]
+ # Set the number of background threads used for physics.
+diff --git a/files/shaders/shadows_fragment.glsl b/files/shaders/shadows_fragment.glsl
+index db14a76..8cbacd4 100644
+--- a/files/shaders/shadows_fragment.glsl
++++ b/files/shaders/shadows_fragment.glsl
+@@ -6,6 +6,8 @@
+     @foreach shadow_texture_unit_index @shadow_texture_unit_list
+ #if @androidGLES
+         uniform sampler2D shadowTexture@shadow_texture_unit_index;
++        // World size of one texel of this cascade, supplied by MWShadowTechnique::cull.
++        uniform float arenaShadowTexelWorld@shadow_texture_unit_index;
+ #else
+         uniform sampler2DShadow shadowTexture@shadow_texture_unit_index;
+ #endif
+@@ -27,24 +29,102 @@ uniform float arenaShadowAdaptiveSoftness;
+ uniform float arenaShadowTexelSize;
+ 
+ #if @androidGLES
+-    #define ARENA_SHADOW_SAMPLER sampler2D
++// -----------------------------------------------------------------------------------------------
++// OpenGL ES path.
++//
++// GLES has no guaranteed hardware depth comparison, so the shadow map is bound as a plain
++// sampler2D and the LEQUAL test is done here. The previous implementation compared a single
++// filtered fetch per tap and then spread eight taps over less than one texel, which on mobile
++// collapsed into one binary sample: that is what produced the hard, blocky shadow edge.
++//
++// Two things fix it. First, the four neighbouring texels are fetched and the *comparison results*
++// are interpolated - the only correct order for depth, and exactly what a sampler2DShadow does in
++// hardware. Second, the filter radius is derived from the world size of a texel in the cascade
++// being sampled, so the penumbra stays the same physical width everywhere instead of changing
++// whenever the cascade or the camera angle changes.
++//
++// Nothing here needs an extension: plain texture2D on a NEAREST depth texture works on every
++// GLES2/GLES3 driver and through NG-GL4ES.
++// -----------------------------------------------------------------------------------------------
++uniform float arenaShadowMapSize;        // shadow map resolution, in texels
++uniform float arenaShadowPenumbraWorld;  // target penumbra width, in world units
++uniform float arenaShadowDepthBias;      // safety net on top of the normal/polygon offsets
+ 
+-float sampleShadowTapAndroid(sampler2D shadowMap, vec3 coords)
++float shadowBilinearPCF(sampler2D shadowMap, vec2 uv, float z)
+ {
+-    // GLES path samples raw depth and performs LEQUAL manually. Bounds are
+-    // checked in shader, so CLAMP_TO_EDGE is sufficient on mobile GPUs.
+-    if (coords.x <= 0.0 || coords.x >= 1.0 || coords.y <= 0.0 || coords.y >= 1.0 || coords.z <= 0.0 || coords.z >= 1.0)
++    float size = max(arenaShadowMapSize, 1.0);
++    float invSize = 1.0 / size;
++
++    vec2 texelPos = uv * size - 0.5;
++    vec2 corner = floor(texelPos);
++    vec2 weight = texelPos - corner;
++    vec2 baseUV = (corner + 0.5) * invSize;
++
++    float d00 = texture2D(shadowMap, baseUV).r;
++    float d10 = texture2D(shadowMap, baseUV + vec2(invSize, 0.0)).r;
++    float d01 = texture2D(shadowMap, baseUV + vec2(0.0, invSize)).r;
++    float d11 = texture2D(shadowMap, baseUV + vec2(invSize, invSize)).r;
++
++    // Compare first, interpolate afterwards.
++    vec4 lit = step(vec4(z), vec4(d00, d10, d01, d11));
++    return mix(mix(lit.x, lit.y, weight.x), mix(lit.z, lit.w, weight.x), weight.y);
++}
++
++bool shadowCoordsOutside(vec3 coords)
++{
++    return any(lessThanEqual(coords, vec3(0.0))) || any(greaterThanEqual(coords, vec3(1.0)));
++}
++
++float sampleShadowLegacy(sampler2D shadowMap, vec4 shadowCoords)
++{
++    vec3 coords = shadowCoords.xyz / shadowCoords.w;
++    if (shadowCoordsOutside(coords))
+         return 1.0;
+-    float storedDepth = texture2D(shadowMap, coords.xy).r;
+-    // Small receiver bias compensates for mobile depth precision; the engine's
+-    // polygon/normal offsets remain the primary acne control.
+-    return step(coords.z - 0.00035, storedDepth);
++
++    // Cheap tier: one bilinear comparison, four fetches. Fewer fetches than the old kernel and
++    // still a smooth edge, because the smoothing now comes from the interpolation rather than
++    // from spreading taps that all landed in the same texel.
++    return shadowBilinearPCF(shadowMap, coords.xy, coords.z - arenaShadowDepthBias);
+ }
++
++float sampleShadowEnhanced(sampler2D shadowMap, vec4 shadowCoords, float distance, float texelWorld)
++{
++    vec3 coords = shadowCoords.xyz / shadowCoords.w;
++    if (shadowCoordsOutside(coords))
++        return 1.0;
++
++    float softness = clamp(arenaShadowSoftness, 0.25, 3.0);
++
++#if @limitShadowMapDistance
++    float distanceRatio = clamp(distance / max(maximumShadowMapDistance, 1.0), 0.0, 1.0);
+ #else
+-    #define ARENA_SHADOW_SAMPLER sampler2DShadow
++    float distanceRatio = clamp(distance / 8192.0, 0.0, 1.0);
+ #endif
++    softness *= mix(1.0, 1.0 + distanceRatio * 0.70,
++        clamp(arenaShadowAdaptiveSoftness, 0.0, 1.0));
++
++    // Constant penumbra in world units, floored at one texel so aliasing is always covered and
++    // capped so the cost stays bounded on the widest cascade.
++    float radiusTexels = clamp(max(arenaShadowPenumbraWorld, 0.0) * softness / max(texelWorld, 0.0001), 1.0, 4.0);
++    vec2 offset = vec2(radiusTexels / max(arenaShadowMapSize, 1.0));
++    float z = coords.z - arenaShadowDepthBias;
++
++    // Four bilinear comparisons on a rotated cross: sixteen fetches covering a (2r+1) texel area.
++    float sum = shadowBilinearPCF(shadowMap, coords.xy + vec2(-offset.x, -offset.y), z);
++    sum += shadowBilinearPCF(shadowMap, coords.xy + vec2( offset.x, -offset.y), z);
++    sum += shadowBilinearPCF(shadowMap, coords.xy + vec2(-offset.x,  offset.y), z);
++    sum += shadowBilinearPCF(shadowMap, coords.xy + vec2( offset.x,  offset.y), z);
++    return sum * 0.25;
++}
+ 
+-float sampleShadowLegacy(ARENA_SHADOW_SAMPLER shadowMap, vec4 shadowCoords)
++float sampleShadowArena(sampler2D shadowMap, vec4 shadowCoords, float distance, float texelWorld)
++{
++    if (arenaEnhancedShadowFiltering >= 0.5)
++        return sampleShadowEnhanced(shadowMap, shadowCoords, distance, texelWorld);
++    return sampleShadowLegacy(shadowMap, shadowCoords);
++}
++#else
++float sampleShadowLegacy(sampler2DShadow shadowMap, vec4 shadowCoords)
+ {
+     float shadow = 0.0;
+     vec3 coords = shadowCoords.xyz / shadowCoords.w;
+@@ -57,17 +137,13 @@ float sampleShadowLegacy(ARENA_SHADOW_SAMPLER shadowMap, vec4 shadowCoords)
+         for(float x = -1.0; x <= 1.0; x += 1.0)
+         {
+             vec2 offset = vec2(x, y) * texelSize;
+-#if @androidGLES
+-            shadow += sampleShadowTapAndroid(shadowMap, vec3(coords.xy + offset, coords.z));
+-#else
+             shadow += shadow2D(shadowMap, vec3(coords.xy + offset, coords.z)).r;
+-#endif
+         }
+     }
+     return shadow / 9.0;
+ }
+ 
+-float sampleShadowEnhanced(ARENA_SHADOW_SAMPLER shadowMap, vec4 shadowCoords, float distance)
++float sampleShadowEnhanced(sampler2DShadow shadowMap, vec4 shadowCoords, float distance)
+ {
+     vec3 coords = shadowCoords.xyz / shadowCoords.w;
+     float texel = max(arenaShadowTexelSize, 0.000001);
+@@ -88,57 +164,24 @@ float sampleShadowEnhanced(ARENA_SHADOW_SAMPLER shadowMap, vec4 shadowCoords, fl
+     // Eight low-discrepancy taps. Each shadow2D lookup can itself use hardware
+     // bilinear comparison, giving a much smoother penumbra than the old fixed
+     // 3x3 kernel without hard-coding a specific map resolution.
+-#if @androidGLES
+-    sum += sampleShadowTapAndroid(shadowMap, vec3(coords.xy + vec2( 0.3604,  0.2232) * scale, coords.z));
+-#else
+     sum += shadow2D(shadowMap, vec3(coords.xy + vec2( 0.3604,  0.2232) * scale, coords.z)).r;
+-#endif
+-#if @androidGLES
+-    sum += sampleShadowTapAndroid(shadowMap, vec3(coords.xy + vec2( 0.2434, -0.3508) * scale, coords.z));
+-#else
+     sum += shadow2D(shadowMap, vec3(coords.xy + vec2( 0.2434, -0.3508) * scale, coords.z)).r;
+-#endif
+-#if @androidGLES
+-    sum += sampleShadowTapAndroid(shadowMap, vec3(coords.xy + vec2(-0.3766,  0.2692) * scale, coords.z));
+-#else
+     sum += shadow2D(shadowMap, vec3(coords.xy + vec2(-0.3766,  0.2692) * scale, coords.z)).r;
+-#endif
+-#if @androidGLES
+-    sum += sampleShadowTapAndroid(shadowMap, vec3(coords.xy + vec2(-0.3056, -0.3618) * scale, coords.z));
+-#else
+     sum += shadow2D(shadowMap, vec3(coords.xy + vec2(-0.3056, -0.3618) * scale, coords.z)).r;
+-#endif
+-#if @androidGLES
+-    sum += sampleShadowTapAndroid(shadowMap, vec3(coords.xy + vec2( 0.6034, -0.4808) * scale, coords.z));
+-#else
+     sum += shadow2D(shadowMap, vec3(coords.xy + vec2( 0.6034, -0.4808) * scale, coords.z)).r;
+-#endif
+-#if @androidGLES
+-    sum += sampleShadowTapAndroid(shadowMap, vec3(coords.xy + vec2(-0.5266,  0.4492) * scale, coords.z));
+-#else
+     sum += shadow2D(shadowMap, vec3(coords.xy + vec2(-0.5266,  0.4492) * scale, coords.z)).r;
+-#endif
+-#if @androidGLES
+-    sum += sampleShadowTapAndroid(shadowMap, vec3(coords.xy + vec2( 0.1034,  0.6292) * scale, coords.z));
+-#else
+     sum += shadow2D(shadowMap, vec3(coords.xy + vec2( 0.1034,  0.6292) * scale, coords.z)).r;
+-#endif
+-#if @androidGLES
+-    sum += sampleShadowTapAndroid(shadowMap, vec3(coords.xy + vec2(-0.5766, -0.5208) * scale, coords.z));
+-#else
+     sum += shadow2D(shadowMap, vec3(coords.xy + vec2(-0.5766, -0.5208) * scale, coords.z)).r;
+-#endif
+     return sum * 0.125;
+ }
+ 
+-float sampleShadowArena(ARENA_SHADOW_SAMPLER shadowMap, vec4 shadowCoords, float distance)
++float sampleShadowArena(sampler2DShadow shadowMap, vec4 shadowCoords, float distance)
+ {
+     if (arenaEnhancedShadowFiltering >= 0.5)
+         return sampleShadowEnhanced(shadowMap, shadowCoords, distance);
+     return sampleShadowLegacy(shadowMap, shadowCoords);
+ }
+-
+-#undef ARENA_SHADOW_SAMPLER
++#endif
+ #endif // SHADOWS
+ 
+ float unshadowedLightRatio(float distance)
+@@ -161,8 +204,14 @@ float unshadowedLightRatio(float distance)
+ #endif
+                 if (all(lessThan(shadowXYZ.xy, vec2(1.0, 1.0))) && all(greaterThan(shadowXYZ.xy, vec2(0.0, 0.0))))
+                 {
++#if @androidGLES
++                    shadowing = min(sampleShadowArena(shadowTexture@shadow_texture_unit_index,
++                        shadowSpaceCoords@shadow_texture_unit_index, distance,
++                        arenaShadowTexelWorld@shadow_texture_unit_index), shadowing);
++#else
+                     shadowing = min(sampleShadowArena(shadowTexture@shadow_texture_unit_index,
+                         shadowSpaceCoords@shadow_texture_unit_index, distance), shadowing);
++#endif
+ 
+                     doneShadows = all(lessThan(shadowXYZ, vec3(0.95, 0.95, 1.0))) && all(greaterThan(shadowXYZ, vec3(0.05, 0.05, 0.0)));
+ #if @perspectiveShadowMaps
+@@ -173,8 +222,14 @@ float unshadowedLightRatio(float distance)
+         @endforeach
+     #else
+         @foreach shadow_texture_unit_index @shadow_texture_unit_list
++#if @androidGLES
++            shadowing = min(sampleShadowArena(shadowTexture@shadow_texture_unit_index,
++                shadowSpaceCoords@shadow_texture_unit_index, distance,
++                arenaShadowTexelWorld@shadow_texture_unit_index), shadowing);
++#else
+             shadowing = min(sampleShadowArena(shadowTexture@shadow_texture_unit_index,
+                 shadowSpaceCoords@shadow_texture_unit_index, distance), shadowing);
++#endif
+         @endforeach
+     #endif
+ #if @limitShadowMapDistance
