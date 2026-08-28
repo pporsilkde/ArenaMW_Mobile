@@ -183,7 +183,7 @@ ExternalProject_Add(openal
 	URL_HASH ${OPENAL_HASH}
 	DOWNLOAD_DIR ${download_dir}
 
-	PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/openal-unset-compiler.patch
+	PATCH_COMMAND sh ${CMAKE_SOURCE_DIR}/patches/apply-patch-idempotent.sh <SOURCE_DIR> ${CMAKE_SOURCE_DIR}/patches/openal-unset-compiler.patch
 
 	CONFIGURE_COMMAND ${wrapper_command} cmake <SOURCE_DIR>
 	${COMMON_CMAKE_ARGS}
@@ -285,7 +285,7 @@ ExternalProject_Add(sdl2
 	URL_HASH ${SDL2_HASH}
 	DOWNLOAD_DIR ${download_dir}
 
-	PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/sdl2-android-120hz-gyroscope.patch
+	PATCH_COMMAND sh ${CMAKE_SOURCE_DIR}/patches/apply-patch-idempotent.sh <SOURCE_DIR> ${CMAKE_SOURCE_DIR}/patches/sdl2-android-120hz-gyroscope.patch
 
 	CONFIGURE_COMMAND ""
 
@@ -304,7 +304,7 @@ ExternalProject_Add(bullet
 	URL_HASH ${BULLET_HASH}
 	DOWNLOAD_DIR ${download_dir}
 
-	PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/bullet-fix-cmake.patch
+	PATCH_COMMAND sh ${CMAKE_SOURCE_DIR}/patches/apply-patch-idempotent.sh <SOURCE_DIR> ${CMAKE_SOURCE_DIR}/patches/bullet-fix-cmake.patch
 
 	CONFIGURE_COMMAND ${wrapper_command} cmake <SOURCE_DIR>
 	${COMMON_CMAKE_ARGS}
@@ -373,7 +373,7 @@ ExternalProject_Add(mygui
 	URL_HASH ${MYGUI_HASH}
 	DOWNLOAD_DIR ${download_dir}
 
-	PATCH_COMMAND patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/mygui-dont-set-debug-postfix.patch
+	PATCH_COMMAND sh ${CMAKE_SOURCE_DIR}/patches/apply-patch-idempotent.sh <SOURCE_DIR> ${CMAKE_SOURCE_DIR}/patches/mygui-dont-set-debug-postfix.patch
 
 	CONFIGURE_COMMAND ${wrapper_command} cmake <SOURCE_DIR>
 	${COMMON_CMAKE_ARGS}
@@ -439,19 +439,19 @@ set(OSG_COMMON
 )
 
 set(OSG_PATCH
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/osg/disable-polygon-offset.patch &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/osg/remove-lib-prefix-from-plugins.patch &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/osg/fix-freetype-include-dirs.patch &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/osg/0001-Replace-Atomic-impl-with-std-atomic.patch &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/osg/0002-BufferObject-make-numClients-atomic.patch &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/osg/0004-IncrementalCompileOperation-wrap-some-stuff-in-atomi.patch &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/osg/remove-zlib-dependency.patch &&
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/osg/0005-CullSettings-make-inheritanceMask-atomic-to-silence-.patch &&
+	sh ${CMAKE_SOURCE_DIR}/patches/apply-patch-idempotent.sh <SOURCE_DIR> ${CMAKE_SOURCE_DIR}/patches/osg/disable-polygon-offset.patch &&
+	sh ${CMAKE_SOURCE_DIR}/patches/apply-patch-idempotent.sh <SOURCE_DIR> ${CMAKE_SOURCE_DIR}/patches/osg/remove-lib-prefix-from-plugins.patch &&
+	sh ${CMAKE_SOURCE_DIR}/patches/apply-patch-idempotent.sh <SOURCE_DIR> ${CMAKE_SOURCE_DIR}/patches/osg/fix-freetype-include-dirs.patch &&
+	sh ${CMAKE_SOURCE_DIR}/patches/apply-patch-idempotent.sh <SOURCE_DIR> ${CMAKE_SOURCE_DIR}/patches/osg/0001-Replace-Atomic-impl-with-std-atomic.patch &&
+	sh ${CMAKE_SOURCE_DIR}/patches/apply-patch-idempotent.sh <SOURCE_DIR> ${CMAKE_SOURCE_DIR}/patches/osg/0002-BufferObject-make-numClients-atomic.patch &&
+	sh ${CMAKE_SOURCE_DIR}/patches/apply-patch-idempotent.sh <SOURCE_DIR> ${CMAKE_SOURCE_DIR}/patches/osg/0004-IncrementalCompileOperation-wrap-some-stuff-in-atomi.patch &&
+	sh ${CMAKE_SOURCE_DIR}/patches/apply-patch-idempotent.sh <SOURCE_DIR> ${CMAKE_SOURCE_DIR}/patches/osg/remove-zlib-dependency.patch &&
+	sh ${CMAKE_SOURCE_DIR}/patches/apply-patch-idempotent.sh <SOURCE_DIR> ${CMAKE_SOURCE_DIR}/patches/osg/0005-CullSettings-make-inheritanceMask-atomic-to-silence-.patch &&
 	# load-ng-gl4es.patch НЕ применяем — его единственный hunk (подмена
 	# dlopen("libGL.so") → dlopen("ng_gl4es.so") в src/osg/GLExtensions.cpp)
 	# уже включён в ng-gl4es.patch. Повторное применение роняет patch -N
 	# с "Reversed (or previously applied)" и exit code ≠ 0.
-	patch -d <SOURCE_DIR> -p1 -t -N < ${CMAKE_SOURCE_DIR}/patches/osg/ng-gl4es.patch
+	sh ${CMAKE_SOURCE_DIR}/patches/apply-patch-idempotent.sh <SOURCE_DIR> ${CMAKE_SOURCE_DIR}/patches/osg/ng-gl4es.patch
 )
 
 ExternalProject_Add(osg
