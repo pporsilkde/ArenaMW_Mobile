@@ -19,16 +19,38 @@ def save(rel: str, text: str) -> None:
     (root / rel).write_text(text, encoding='utf-8')
 
 
+def _line_signature(line: str) -> str:
+    # Formatting drift (indentation / blank lines) must not make a semantic patch
+    # depend on an old source line layout.  Keep code tokens/text intact while
+    # normalising horizontal whitespace.
+    return " ".join(line.strip().split())
+
+
 def replace_once(text: str, old: str, new: str, label: str) -> str:
-    # Prefer the old anchor whenever it is still present.  Checking for the
-    # replacement first is unsafe for short/common snippets because an identical
-    # replacement may legitimately exist elsewhere in the same translation unit.
+    # Fast exact/idempotent paths first.
     count = text.count(old)
     if count == 1:
         return text.replace(old, new, 1)
     if count == 0 and new in text:
         return text
-    raise SystemExit(f'{label}: expected exactly one anchor, found {count}')
+    if count > 1:
+        raise SystemExit(f'{label}: exact semantic anchor is ambiguous ({count})')
+
+    # Anchor fallback: compare the ordered non-empty source lines, ignoring only
+    # blank-line and indentation drift.  This deliberately does NOT use @@ line
+    # numbers and refuses to choose when more than one code region matches.
+    src_lines = text.splitlines(keepends=True)
+    old_sig = [_line_signature(x) for x in old.splitlines() if _line_signature(x)]
+    nonempty = [(i, _line_signature(line)) for i, line in enumerate(src_lines) if _line_signature(line)]
+    hits = []
+    n = len(old_sig)
+    for pos in range(0, len(nonempty) - n + 1):
+        if [sig for _, sig in nonempty[pos:pos+n]] == old_sig:
+            hits.append((nonempty[pos][0], nonempty[pos+n-1][0]))
+    if len(hits) == 1:
+        a, b = hits[0]
+        return ''.join(src_lines[:a]) + new + ''.join(src_lines[b+1:])
+    raise SystemExit(f'{label}: semantic source anchor matches {len(hits)} regions')
 
 
 # 1) Summon despawn: never read a Ptr after World::deleteObject().

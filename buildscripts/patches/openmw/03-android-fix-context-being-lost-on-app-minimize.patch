@@ -1,51 +1,78 @@
-From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
-From: Ilya Zhuravlev <whatever@xyz.is>
-Date: Sun, 28 Apr 2019 18:16:37 -0400
-Subject: [PATCH] android: fix context being lost on app minimize
-
----
- apps/openmw/engine.cpp         | 8 ++++++++
- components/debug/debugging.cpp | 5 +++++
- 2 files changed, 13 insertions(+)
-
 diff --git a/apps/openmw/engine.cpp b/apps/openmw/engine.cpp
-index 012ab8f59..84b6d60b2 100644
+index eb15298..8cffdc9 100644
 --- a/apps/openmw/engine.cpp
 +++ b/apps/openmw/engine.cpp
-@@ -482,6 +482,9 @@ std::string OMW::Engine::loadSettings (Settings::Manager & settings)
+@@ -817,16 +817,19 @@ std::string OMW::Engine::loadSettings (Settings::Manager & settings)
+         Settings::Manager::setBool("fps counter default y001s", "HUD", true);
+         settings.saveUser(settingspath);
+         Settings::Manager::resetPendingChanges();
+     }
+ 
      return settingspath;
  }
  
-+// To share the viewer with Android interfaces
++// Android: share the viewer with lifecycle/error handling.
 +osg::ref_ptr<osgViewer::Viewer> g_viewer;
 +
  void OMW::Engine::createWindow(Settings::Manager& settings)
  {
      int screen = settings.getInt("screen", "Video");
-@@ -599,6 +602,9 @@ void OMW::Engine::createWindow(Settings::Manager& settings)
+     int width = settings.getInt("resolution x", "Video");
+     int height = settings.getInt("resolution y", "Video");
+     bool fullscreen = settings.getBool("fullscreen", "Video");
+     bool windowBorder = settings.getBool("window border", "Video");
+     bool vsync = settings.getBool("vsync", "Video");
+@@ -934,16 +937,19 @@ void OMW::Engine::createWindow(Settings::Manager& settings)
+     camera->setViewport(0, 0, graphicsWindow->getTraits()->width, graphicsWindow->getTraits()->height);
+ 
+     if (Debug::shouldDebugOpenGL())
+         mViewer->setRealizeOperation(new Debug::EnableGLDebugOperation());
+ 
      mViewer->realize();
  
      mViewer->getEventQueue()->getCurrentEventState()->setWindowRectangle(0, 0, graphicsWindow->getTraits()->width, graphicsWindow->getTraits()->height);
 +
-+    // To share the viewer with Android interfaces
++    // Android lifecycle code releases this ref before process shutdown.
 +    g_viewer = mViewer;
  }
  
  void OMW::Engine::setWindowIcon()
-@@ -942,6 +948,8 @@ void OMW::Engine::go()
-         mEnvironment.limitFrameRate(frameTimer.time_s());
+ {
+     boost::filesystem::ifstream windowIconStream;
+     std::string windowIcon = (mResDir / "mygui" / "openmw.png").string();
+     windowIconStream.open(windowIcon, std::ios_base::in | std::ios_base::binary);
+     if (windowIconStream.fail())
+@@ -1299,16 +1305,20 @@ void OMW::Engine::go()
+                 for (auto camera : cameras)
+                     camera->getStats()->report(stats, frameNumber - 2);
+             }
+         }
+ 
+         frameRateLimiter.limit();
      }
  
++    // Android may destroy the EGL context immediately after the native loop returns.
++    // Release the shared viewer ref before the normal X040 threading shutdown path.
 +    g_viewer.release();
 +
      // Save user settings
      settings.saveUser(settingspath);
  
+     mViewer->stopThreading();
+ 
+     // Rendering threads are stopped; remaining preview graphs can be released.
+     MWRender::collectRetiredCharacterPreviews(0, true);
+ 
 diff --git a/components/debug/debugging.cpp b/components/debug/debugging.cpp
-index dfed077e3..75fca4e3c 100644
+index 0e37294..11ef713 100644
 --- a/components/debug/debugging.cpp
 +++ b/components/debug/debugging.cpp
-@@ -8,6 +8,8 @@
+@@ -8,16 +8,18 @@
+ 
+ #ifdef _WIN32
+ #   include <components/crashcatcher/windows_crashcatcher.hpp>
+ #   undef WIN32_LEAN_AND_MEAN
+ #   define WIN32_LEAN_AND_MEAN
  #   include <windows.h>
  #endif
  
@@ -54,8 +81,18 @@ index dfed077e3..75fca4e3c 100644
  namespace Debug
  {
  #ifdef _WIN32
-@@ -86,6 +88,8 @@ namespace Debug
-     }
+     bool isRedirected(DWORD nStdHandle)
+     {
+         DWORD fileType = GetFileType(GetStdHandle(nStdHandle));
+ 
+         return (fileType == FILE_TYPE_DISK) || (fileType == FILE_TYPE_PIPE);
+@@ -138,16 +140,18 @@ namespace Debug
+ 
+ static std::unique_ptr<std::ostream> rawStdout = nullptr;
+ 
+ std::ostream& getRawStdout()
+ {
+     return rawStdout ? *rawStdout : std::cout;
  }
  
 +extern osg::ref_ptr<osgViewer::Viewer> g_viewer;
@@ -63,14 +100,26 @@ index dfed077e3..75fca4e3c 100644
  int wrapApplication(int (*innerApplication)(int argc, char *argv[]), int argc, char *argv[], const std::string& appName)
  {
  #if defined _WIN32
-@@ -139,6 +143,7 @@ int wrapApplication(int (*innerApplication)(int argc, char *argv[]), int argc, c
+     (void)Debug::attachParentConsole();
+ #endif
+     rawStdout = std::make_unique<std::ostream>(std::cout.rdbuf());
+ 
+     // Some objects used to redirect cout and cerr
+@@ -201,16 +205,17 @@ int wrapApplication(int (*innerApplication)(int argc, char *argv[]), int argc, c
+         // install the crash handler as soon as possible. note that the log path
+         // does not depend on config being read.
+         crashCatcherInstall(argc, argv, (cfgMgr.getLogPath() / crashLogName).string());
+ #endif
+         ret = innerApplication(argc, argv);
      }
-     catch (std::exception& e)
+     catch (const std::exception& e)
      {
 +        g_viewer.release();
  #if (defined(__APPLE__) || defined(__linux) || defined(__unix) || defined(__posix))
          if (!isatty(fileno(stdin)))
  #endif
--- 
-2.28.0
-
+             SDL_ShowSimpleMessageBox(0, (appName + ": Fatal error").c_str(), e.what(), nullptr);
+ 
+         Log(Debug::Error) << "Error: " << e.what();
+ 
+         ret = 1;

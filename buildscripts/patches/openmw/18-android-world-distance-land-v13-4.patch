@@ -81,16 +81,3 @@ index d93322b..4233340 100644
                <Property key="TextAlign" value="Right"/>
              </Widget>
            </Widget>
-diff --git a/files/ui/graphicspage.ui b/files/ui/graphicspage.ui
-index df7cdbb..66816fc 100644
---- a/files/ui/graphicspage.ui
-+++ b/files/ui/graphicspage.ui
-@@ -516,7 +516,7 @@
-              <number>512</number>
-             </property>
-             <property name="maximum">
--             <number>81920</number>
-+             <number>40960</number>
-             </property>
-             <property name="value">
-              <number>8192</number>

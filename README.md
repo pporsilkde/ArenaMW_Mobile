@@ -1,10 +1,8 @@
-# ArenaMW Android — Complex Water V3
+# ArenaMW Android Y001s — main-safe single-player builder
 
-Текущая тестовая ветка: сложная PBR-вода адаптирована для Android GLES/NG-GL4ES. См. `COMPLEX_WATER_V3_RU.md`.
+Cleaned Android builder for the ArenaMW Y001s single-player line. It tracks `pporsilkde/AMW` `main` by default. Android source changes are applied by semantic/context anchors; unified-diff line numbers are not used to locate hunks.
 
-# ArenaMW Android — original-builder port
-
-This is a minimal single-player adaptation of the original working `Android_ArenaMP_NG` builder. The toolchain and dependency versions are intentionally kept close to the original instead of being modernized all at once.
+The NDK r21e / NG-GL4ES compatibility stack is intentionally retained. The historical water/PostFX/mobile tuning work remains in the active patch chain where it is still Android-specific.
 
 ## Changes from Android_ArenaMP_NG
 
@@ -17,6 +15,14 @@ This is a minimal single-player adaptation of the original working `Android_Aren
 - ArenaMW resources are packed directly.
 - Original NDK r21e, AGP 4.0.2 and NG-GL4ES dependency stack retained for compatibility.
 - `sse2neon` Clang guard is relaxed in the temporary ArenaMW source tree for NDK r21e / Clang 9.
+
+## Patch maintenance (Y001s)
+
+`buildscripts/patches/anchor_patch.py` ignores unified-diff hunk coordinates when locating source changes. It matches real code context and supports explicit `ARENA_ANCHOR:` markers for locations that would otherwise be ambiguous. Already-applied hunks are accepted, so the chain can be rerun safely.
+
+The current chain has been rebased against the ArenaMW Y001s desktop tree, including the X040 render-thread shutdown changes and the Y001s HUD/graphics layout. `28-android-magic-mali-stability.py` is now an active stage rather than an unused file.
+
+See `PATCHING.md` for maintenance rules and tests.
 
 ## Native build
 
@@ -55,7 +61,7 @@ HDR, Bloom, SSR и SMAA доступны как opt-in эффекты. Они в
 
 The builder tracks `pporsilkde/AMW` `main`, matching GitHub Actions. The complete patch chain was revalidated against commit `1f3e75652c63911823c5207a13d214249d17c256` from the supplied AMW(8) snapshot. V13.2 rebases the settings UI after upstream removed an old Effects block, physically removes the unsafe Effects/Advanced Android pages, fixes tab mapping, removes visible PBR-quality/SMAA-threshold controls, hard-disables native fog/god-rays/first-person depth bridging, enforces shadow-map 1024 and shadow-distance 8192 caps at runtime, adds a separate shadow-distance launcher control, preserves desktop-style portable `build.ini` metadata/load order, and reduces default streaming worker contention. See `AMW_ANDROID_V13_NOTES_RU.txt`.
 
-Because the builder follows `main`, a future upstream change may intentionally make `git apply` fail. Rebase the affected patch rather than forcing or partially applying it.
+Because the builder follows `main`, upstream drift is handled by the Y001s anchor patch engine. If a semantic/context anchor disappears or becomes ambiguous, the build stops and the affected patch must be rebased deliberately; line-number fuzzing is not used as a fallback.
 
 ## ArenaMW Android V13.3 notes
 - In-game PBR, HDR and Bloom pages are removed on Android; SMAA is removed from Display.

@@ -2,14 +2,14 @@ diff --git a/files/mygui/openmw_hud.layout b/files/mygui/openmw_hud.layout
 index 53e4ab0..f2a49f6 100644
 --- a/files/mygui/openmw_hud.layout
 +++ b/files/mygui/openmw_hud.layout
-@@ -6,7 +6,7 @@
+@@ -8,7 +8,7 @@ ARENA_ANCHOR: name="FpsText"
          <Widget type="Widget" position="0 0 300 200" name="GameplayHud" align="Stretch">
              <Property key="NeedMouse" value="false"/>
  	
--        <Widget type="TextBox" skin="SandBrightText" position="8 6 72 22" name="FpsText" align="Left Top">
-+        <Widget type="TextBox" skin="SandBrightText" position="30 6 72 22" name="FpsText" align="Left Top">
+-        <Widget type="TextBox" skin="SandBrightText" position="12 8 120 24" name="FpsText" align="Left Top">
++        <Widget type="TextBox" skin="SandBrightText" position="30 8 120 24" name="FpsText" align="Left Top">
              <Property key="NeedMouse" value="false"/>
-             <Property key="TextAlign" value="Left"/>
+             <Property key="TextAlign" value="Left VCenter"/>
              <Property key="TextShadow" value="true"/>
 diff --git a/files/shaders/water_pbr_android_fragment.glsl b/files/shaders/water_pbr_android_fragment.glsl
 index 550ab12..5b64283 100644

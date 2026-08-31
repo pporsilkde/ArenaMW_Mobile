@@ -126,7 +126,7 @@ index 46a2615..a60a258 100644
  
          for (const char* name : landOptimizationModeNames)
              mLandOptimizationMode->addItem(arenaText(name));
-@@ -698,7 +696,6 @@ namespace MWGui
+@@ -698,7 +696,6 @@ ARENA_ANCHOR: SettingsWindow::SettingsWindow()
          updateNpcBarModeCombo();
          updateQuickLootModeCombo();
          updateTerrainPresetCombo();
@@ -268,17 +268,18 @@ index 2db91a1..e668d76 100644
                  uniform->set(1.0f / static_cast<float>(shadowMapResolution));
              }
          }
-@@ -1774,10 +1775,12 @@ namespace MWRender
- 
-         if (mShadowManager)
-         {
--            const float shadowDistance = mLandOptimizationEnabled
-+            const float configuredShadowDistance = mLandOptimizationEnabled
-                 ? mConfiguredViewDistance * sLandOptimizationShadowDistanceRatio
--                : std::max(0.f, Settings::Manager::getFloat("maximum shadow map distance", "Shadows"));
+@@ -1801,11 +1801,13 @@ ARENA_ANCHOR: link shadow distance to viewing distance
+             const bool linkShadowDistance
+                 = Settings::Manager::getBool("link shadow distance to viewing distance", "Shadows");
+             const float shadowDistance = linkShadowDistance
+-                ? std::min(16384.f, std::max(0.f, mConfiguredViewDistance))
++                ? std::clamp(mConfiguredViewDistance, 0.f, 8192.f)
+                 : (mLandOptimizationEnabled
+                     ? mConfiguredViewDistance * sLandOptimizationShadowDistanceRatio
+-                    : std::max(0.f, Settings::Manager::getFloat("maximum shadow map distance", "Shadows")));
 -            mShadowManager->setMaximumShadowMapDistance(shadowDistance * adaptiveDistanceScale);
-+                : Settings::Manager::getFloat("maximum shadow map distance", "Shadows");
-+            const float shadowDistance = std::clamp(configuredShadowDistance, 0.f, 8192.f);
++                    : std::clamp(Settings::Manager::getFloat("maximum shadow map distance", "Shadows"), 0.f, 8192.f));
++            // Mobile safety cap applies after adaptive scaling as well.
 +            mShadowManager->setMaximumShadowMapDistance(
 +                std::clamp(shadowDistance * adaptiveDistanceScale, 0.f, 8192.f));
          }

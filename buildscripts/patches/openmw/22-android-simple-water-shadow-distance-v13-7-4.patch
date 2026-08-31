@@ -51,23 +51,22 @@ index 44d0345..6ab3bc4 100644
      constexpr float sLandOptimizationGroundcoverDistanceRatio = 0.40f;
  
      int getMaterialQualityLevel()
-@@ -1775,12 +1774,13 @@ namespace MWRender
- 
-         if (mShadowManager)
-         {
--            const float configuredShadowDistance = mLandOptimizationEnabled
--                ? mConfiguredViewDistance * sLandOptimizationShadowDistanceRatio
--                : Settings::Manager::getFloat("maximum shadow map distance", "Shadows");
--            const float shadowDistance = std::clamp(configuredShadowDistance, 0.f, 8192.f);
+@@ -1801,13 +1800,12 @@ ARENA_ANCHOR: link shadow distance to viewing distance
+             const bool linkShadowDistance
+                 = Settings::Manager::getBool("link shadow distance to viewing distance", "Shadows");
+             const float shadowDistance = linkShadowDistance
+-                ? std::clamp(mConfiguredViewDistance, 0.f, 8192.f)
+-                : (mLandOptimizationEnabled
+-                    ? mConfiguredViewDistance * sLandOptimizationShadowDistanceRatio
+-                    : std::clamp(Settings::Manager::getFloat("maximum shadow map distance", "Shadows"), 0.f, 8192.f));
+-            // Mobile safety cap applies after adaptive scaling as well.
 -            mShadowManager->setMaximumShadowMapDistance(
 -                std::clamp(shadowDistance * adaptiveDistanceScale, 0.f, 8192.f));
-+            // Shadow distance is an explicit user setting. Land optimization must not
-+            // replace 8192 with 25% of world distance or apply adaptive scaling again.
-+            // Keep this independent from dynamic terrain distance; the mobile hard cap
-+            // is already 8192, so the selected value remains predictable and safe.
-+            const float configuredShadowDistance = std::clamp(
-+                Settings::Manager::getFloat("maximum shadow map distance", "Shadows"), 0.f, 8192.f);
-+            mShadowManager->setMaximumShadowMapDistance(configuredShadowDistance);
++                ? std::clamp(mConfiguredViewDistance, 0.f, 8192.f)
++                : std::clamp(Settings::Manager::getFloat("maximum shadow map distance", "Shadows"), 0.f, 8192.f);
++            // Mobile: honor the explicit link toggle but do not let adaptive terrain
++            // scaling shrink or expand the shadow setting a second time.
++            mShadowManager->setMaximumShadowMapDistance(shadowDistance);
          }
      }
  

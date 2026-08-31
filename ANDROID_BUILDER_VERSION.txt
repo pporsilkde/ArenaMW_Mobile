@@ -1,0 +1,4 @@
+ArenaMW Android builder: Y001s
+Patch mode: semantic/context anchors; unified-diff line coordinates ignored
+Desktop compatibility baseline verified: ArenaMW Y001s
+Default source branch: main
