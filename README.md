@@ -1,8 +1,10 @@
-# ArenaMW Android Y001s — main-safe single-player builder
+# ArenaMW Android Y001s r1 — main-safe single-player builder
 
 Cleaned Android builder for the ArenaMW Y001s single-player line. It tracks `pporsilkde/AMW` `main` by default. Android source changes are applied by semantic/context anchors; unified-diff line numbers are not used to locate hunks.
 
 The NDK r21e / NG-GL4ES compatibility stack is intentionally retained. The historical water/PostFX/mobile tuning work remains in the active patch chain where it is still Android-specific.
+
+> **Y001s r1 dependency-anchor fix:** repeated MyGUI resource blocks now use explicit semantic anchors, and the anchor engine uses those anchors for both first application and already-applied/idempotence checks. The CI cache epoch was bumped so failed or partially patched dependency trees are not restored.
 
 ## Changes from Android_ArenaMP_NG
 

@@ -1,4 +1,4 @@
-# ArenaMW Android Y001s
+# ArenaMW Android Y001s r1
 
 Очищенный single-player Android-сборщик ArenaMW для ветки Y001s. По умолчанию используется `pporsilkde/AMW` `main`. Патчи применяются по содержимому и семантическим якорям, а не по номерам строк `@@ -N,+M`.
 
