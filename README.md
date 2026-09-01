@@ -1,4 +1,9 @@
-# ArenaMW Android Y001s r1 — main-safe single-player builder
+# ArenaMW Android Y001s r3 — main-safe single-player builder
+
+## Y001s r3 — launcher Help hub
+
+The launcher now has a dedicated icon-based **Help** page styled like the rest of the launcher. The control-layout editor no longer contains a separate help dialog. Help covers default touch controls, long presses, FPS/presets, storage/mods/saves, troubleshooting and ArenaMW single-player nuances.
+
 
 Cleaned Android builder for the ArenaMW Y001s single-player line. It tracks `pporsilkde/AMW` `main` by default. Android source changes are applied by semantic/context anchors; unified-diff line numbers are not used to locate hunks.
 

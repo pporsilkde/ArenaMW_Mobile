@@ -1,4 +1,4 @@
-ArenaMW Android Y001s r2
-Controls help + preset-aware 30/60 FPS limiter
-F11 HUD toggle / F12 screenshot / Q autorun / hold E object manipulation
-Includes Y001s anchor/MyGUI fixes
+ArenaMW Android Y001s r3
+Launcher Help hub with icon-based guide
+Controls help removed from control-layout editor
+Includes r2 preset-aware FPS and previous anchor/MyGUI fixes
