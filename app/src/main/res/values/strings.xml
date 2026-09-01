@@ -792,6 +792,15 @@
     <string-array name="gfx_grass_entries"><item>Off</item><item>Low</item><item>Balanced</item><item>High</item></string-array>
     <string-array name="gfx_shader_entries"><item>Compatibility (recommended)</item><item>Standard normal/spec maps</item></string-array>
 
+    <string name="gfx_fps_limit">FPS limit</string>
+    <string name="gfx_fps_limit_note">Preset: Very Low, Performance and Battery use 30 FPS; Balanced and Quality use 60 FPS. A manual value overrides the preset.</string>
+    <string-array name="gfx_fps_limit_entries">
+        <item>By preset (30 / 60 FPS)</item>
+        <item>30 FPS</item>
+        <item>60 FPS</item>
+        <item>Unlimited</item>
+    </string-array>
+
     <string name="gfx_scene_section">World and streaming</string>
     <string name="gfx_render_section">Rendering</string>
 
@@ -814,16 +823,18 @@
     <!-- ArenaMW on-screen controls help -->
     <string name="btn_controlsHelp">Controls guide</string>
     <string name="controls_help_title">On-screen controls</string>
+    <string name="controls_help_summary">Current on-screen buttons, gestures and long-press actions</string>
+    <string name="controls_help_body">Left half — movement. Right half — camera/look.\n\nAttack — hold to attack/charge. Take / Use (E) — tap to activate/take; keep holding E on a movable object to grab, manipulate and drag it. Jump — Space; while swimming it moves upward; hold about 1 second to additionally send Q — continuous/autorun. Sneak — Ctrl; hold about 650 ms to send Z and open the animation menu. Wait — T. Weapon — F. Magic — R. Journal — tap J; hold about 650 ms for console (`/~).\n\nPost-processing / keyboard button — outside text input: double tap = F11 (hide/show HUD), hold = F12 (screenshot). During text input it toggles the on-screen keyboard. Quick slots 0–9 are available through QP.\n\nControls can be moved, resized and have their opacity changed in On-screen controls.</string>
     <string name="controls_help_move_title">Left stick — movement</string>
     <string name="controls_help_move_desc">Move forward, backward and sideways. The touch field covers the left half of the gameplay area.</string>
     <string name="controls_help_look_title">Right stick — camera</string>
     <string name="controls_help_look_desc">Look around and turn the camera by dragging on the right side of the screen.</string>
     <string name="controls_help_attack_title">Attack</string>
     <string name="controls_help_attack_desc">Primary attack. While holding the button, dragging also adjusts the camera/aim.</string>
-    <string name="controls_help_use_title">Use / interact</string>
-    <string name="controls_help_use_desc">Emulates E: activate doors, NPCs, containers and objects.</string>
-    <string name="controls_help_jump_title">Jump</string>
-    <string name="controls_help_jump_desc">Hold = Space (jump / swim up). Hold for 1 second to additionally send Q.</string>
+    <string name="controls_help_use_title">Take / use (E)</string>
+    <string name="controls_help_use_desc">Tap E to activate/take. Keep holding E on a movable object to grab, manipulate and drag it.</string>
+    <string name="controls_help_jump_title">Jump / Q autorun</string>
+    <string name="controls_help_jump_desc">Hold = Space (jump / swim up). Hold about 1 second to additionally send Q — continuous/autorun toggle.</string>
     <string name="controls_help_sneak_title">Sneak</string>
     <string name="controls_help_sneak_desc">Press/hold = Ctrl. Hold for 650 ms to release Ctrl and send Z (animation menu).</string>
     <string name="controls_help_pause_title">Menu / Escape</string>
@@ -841,7 +852,7 @@
     <string name="controls_help_scroll_title">Scroll</string>
     <string name="controls_help_scroll_desc">Swipe vertically to emulate the mouse wheel in lists, menus and other scrollable windows.</string>
     <string name="controls_help_corner_title">Keyboard / F11 / F12</string>
-    <string name="controls_help_corner_desc">During text input the corner button shows/hides the on-screen keyboard. Otherwise: double tap = F11, hold = F12.</string>
+    <string name="controls_help_corner_desc">During text input the corner button shows/hides the on-screen keyboard. Otherwise: double tap = F11 (hide/show HUD); hold = F12 (screenshot).</string>
     <string name="controls_help_quick_title">Quick slots 0–9</string>
     <string name="controls_help_quick_desc">Open the radial quick-slot selector and drag toward a slot to activate keys 0–9.</string>
     <string name="controls_help_note">Custom buttons loaded from launcher/controls.cfg can add more actions and may differ from this built-in guide.</string>

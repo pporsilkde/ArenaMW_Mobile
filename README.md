@@ -82,3 +82,8 @@ Because the builder follows `main`, upstream drift is handled by the Y001s ancho
 ## V13.7.3 NG-GL4ES / NDK r21e compatibility
 
 Sisah2/Openmw3 is built out-of-source. ArenaMW patches its pinned glslang diagnostic path formatting so Android NDK r21e does not require `std::filesystem::absolute()`. Shader compilation semantics are unchanged. See `V13_7_3_NOTES.md`.
+
+## Y001s r2 — controls help and FPS limiter
+
+- Built-in EN/RU controls guide now matches the actual Android OSC: F11 toggles HUD visibility, F12 takes a screenshot, Q toggles continuous autorun, and holding Take/Use (E) manipulates movable objects. ArenaMW-specific T wait and hold-Sneak = Z animation menu are documented separately.
+- Graphics settings expose **By preset / 30 FPS / 60 FPS / Unlimited**. Very Low, Performance and Battery default to 30 FPS; Balanced and Quality default to 60 FPS. Manual FPS override does not force the visual preset to Custom.

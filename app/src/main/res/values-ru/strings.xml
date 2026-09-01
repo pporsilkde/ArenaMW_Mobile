@@ -555,6 +555,15 @@
     <string-array name="gfx_grass_entries"><item>Выключена</item><item>Низко</item><item>Баланс</item><item>Высоко</item></string-array>
     <string-array name="gfx_shader_entries"><item>Совместимость (рекомендуется)</item><item>Обычные normal/spec карты</item></string-array>
 
+    <string name="gfx_fps_limit">Ограничение FPS</string>
+    <string name="gfx_fps_limit_note">По пресету: «Очень низкие», «Производительность» и «Энергосбережение» — 30 FPS; «Баланс» и «Качество» — 60 FPS. Ручное значение имеет приоритет.</string>
+    <string-array name="gfx_fps_limit_entries">
+        <item>По пресету (30 / 60 FPS)</item>
+        <item>30 FPS</item>
+        <item>60 FPS</item>
+        <item>Без ограничения</item>
+    </string-array>
+
     <string name="gfx_scene_section">Мир и подгрузка</string>
     <string name="gfx_render_section">Рендеринг</string>
 
@@ -577,16 +586,18 @@
     <!-- Справка по экранному управлению ArenaMW -->
     <string name="btn_controlsHelp">Описание управления</string>
     <string name="controls_help_title">Экранное управление</string>
+    <string name="controls_help_summary">Актуальные экранные кнопки, жесты и длинные нажатия</string>
+    <string name="controls_help_body">Левая половина — движение. Правая половина — камера/обзор.\n\nАтака — удерживайте для атаки/заряда. ВЗЯТЬ / Использовать (E) — короткое нажатие активирует/берёт объект; удержание E на перемещаемом предмете включает манипуляцию и позволяет его перетаскивать. Прыжок — Space; в воде поднимает вверх; удержание около 1 секунды дополнительно отправляет Q — постоянный бег. Скрытность — Ctrl; удержание около 650 мс отправляет Z и открывает меню анимаций. Ожидание — T. Оружие — F. Магия — R. Журнал — короткое J; удержание около 650 мс открывает консоль (`/~).\n\nКнопка постобработки / клавиатуры — вне текстового ввода: двойной тап = F11 (скрыть/показать HUD), удержание = F12 (скриншот). Во время ввода показывает/скрывает экранную клавиатуру. Быстрые слоты 0–9 доступны через QP.\n\nПоложение, размер и прозрачность кнопок настраиваются в «Экранном управлении».</string>
     <string name="controls_help_move_title">Левый стик — движение</string>
     <string name="controls_help_move_desc">Движение вперёд, назад и в стороны. Сенсорная зона занимает левую половину игровой области.</string>
     <string name="controls_help_look_title">Правый стик — камера</string>
     <string name="controls_help_look_desc">Осмотр и поворот камеры движением пальца по правой части экрана.</string>
     <string name="controls_help_attack_title">Атака</string>
     <string name="controls_help_attack_desc">Основная атака. Если удерживать кнопку и двигать палец, можно одновременно корректировать камеру/прицел.</string>
-    <string name="controls_help_use_title">Использовать / взаимодействие</string>
-    <string name="controls_help_use_desc">Эмулирует E: двери, NPC, контейнеры и другие интерактивные объекты.</string>
-    <string name="controls_help_jump_title">Прыжок</string>
-    <string name="controls_help_jump_desc">Удержание = Space (прыжок / всплытие). Удержание 1 секунду дополнительно отправляет Q.</string>
+    <string name="controls_help_use_title">ВЗЯТЬ / использовать (E)</string>
+    <string name="controls_help_use_desc">Короткое E активирует или берёт объект. Удержание E на перемещаемом предмете включает манипуляцию и позволяет его перетаскивать.</string>
+    <string name="controls_help_jump_title">Прыжок / Q — постоянный бег</string>
+    <string name="controls_help_jump_desc">Удержание = Space (прыжок / всплытие). Удержание около 1 секунды дополнительно отправляет Q — переключение постоянного бега.</string>
     <string name="controls_help_sneak_title">Приседание / скрытность</string>
     <string name="controls_help_sneak_desc">Нажатие/удержание = Ctrl. Удержание 650 мс отпускает Ctrl и отправляет Z — меню анимаций.</string>
     <string name="controls_help_pause_title">Меню / Escape</string>
@@ -604,7 +615,7 @@
     <string name="controls_help_scroll_title">Прокрутка</string>
     <string name="controls_help_scroll_desc">Вертикальный свайп эмулирует колесо мыши в списках, меню и других прокручиваемых окнах.</string>
     <string name="controls_help_corner_title">Клавиатура / F11 / F12</string>
-    <string name="controls_help_corner_desc">Во время текстового ввода угловая кнопка показывает/скрывает экранную клавиатуру. Вне ввода: двойной тап = F11, удержание = F12.</string>
+    <string name="controls_help_corner_desc">Во время текстового ввода угловая кнопка показывает/скрывает экранную клавиатуру. Вне ввода: двойной тап = F11 (скрыть/показать HUD), удержание = F12 (скриншот).</string>
     <string name="controls_help_quick_title">Быстрые слоты 0–9</string>
     <string name="controls_help_quick_desc">Открывает радиальный выбор быстрых слотов; проведите к нужному сектору для активации клавиш 0–9.</string>
     <string name="controls_help_note">Пользовательские кнопки из launcher/controls.cfg могут добавлять дополнительные действия и отличаться от этой встроенной справки.</string>
