@@ -1,8 +1,8 @@
-# ArenaMW Android Y001s r3 — main-safe single-player builder
+# ArenaMW Android Y001s r4 — main-safe single-player builder
 
-## Y001s r3 — launcher Help hub
+## Y001s r4 — Help identity and gold icon pass
 
-The launcher now has a dedicated icon-based **Help** page styled like the rest of the launcher. The control-layout editor no longer contains a separate help dialog. Help covers default touch controls, long presses, FPS/presets, storage/mods/saves, troubleshooting and ArenaMW single-player nuances.
+The launcher Help hub now identifies itself as **ArenaMW (fork OpenMW)** and its generic black/white file, performance, network and update symbols are replaced with transparent gold/orange beveled PNG icons that match the in-game on-screen control art. Existing gold control icons are kept unchanged.
 
 
 Cleaned Android builder for the ArenaMW Y001s single-player line. It tracks `pporsilkde/AMW` `main` by default. Android source changes are applied by semantic/context anchors; unified-diff line numbers are not used to locate hunks.

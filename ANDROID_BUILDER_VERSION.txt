@@ -1,4 +1,4 @@
-ArenaMW Android Y001s r3
-Launcher Help hub with icon-based guide
-Controls help removed from control-layout editor
-Includes r2 preset-aware FPS and previous anchor/MyGUI fixes
+ArenaMW Android Y001s r4
+Launcher Help identity + gold icon style
+Help service icons use transparent gold beveled PNG assets
+Includes all previous Help/FPS/anchor/resource fixes
