@@ -11,7 +11,7 @@ fi
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 ANCHOR_PATCH="$SCRIPT_DIR/../anchor_patch.py"
-PATCHSET_ID="arenamw-android-y001-anchor-main-safe"
+PATCHSET_ID="arenamw-android-y002-anchor-main-safe"
 MARKER="$SRC/.arenamw_android_patchset"
 
 copy_if_changed() {
@@ -36,7 +36,10 @@ verify_patchset() {
     grep -q "android" "$SRC/apps/openmw/android_main.cpp" || true
     # Stable magic/VFX guards are intentionally part of Y001 Android.
     grep -q "Skipping free VFX" "$SRC/apps/openmw/mwrender/effectmanager.cpp" || { echo "ERROR: Mali/VFX stability guard missing" >&2; return 32; }
-    echo "==> ArenaMW Android Y001 feature patchset verified"
+    # Y002: GPU-side VFX hardening for Mali/NG-GL4ES (patch 29). The animation.cpp
+    # half is best-effort by design, so only the required half is verified here.
+    grep -q "ArenaVfxHardeningVisitor" "$SRC/apps/openmw/mwrender/effectmanager.cpp" || { echo "ERROR: Mali VFX hardening missing" >&2; return 33; }
+    echo "==> ArenaMW Android Y002 feature patchset verified"
 }
 
 finish_patchset() {
@@ -102,8 +105,11 @@ do
     apply_anchor_patch "$SCRIPT_DIR/$n"
 done
 
-# Semantic Python patch: exact named functions/code anchors, no line coordinates.
+# Semantic Python patches: exact named functions/code anchors, no line coordinates.
+# 28 covers the CPU side of magic/VFX lifetime; 29 covers the GPU side (Mali).
+# 29 anchors partly on text that 28 produces, so the order matters.
 python3 "$SCRIPT_DIR/28-android-magic-mali-stability.py" "$SRC"
+python3 "$SCRIPT_DIR/29-android-mali-vfx-hardening.py" "$SRC"
 
 finish_patchset
 trap - EXIT INT TERM HUP

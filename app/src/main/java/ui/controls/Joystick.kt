@@ -49,12 +49,30 @@ open class Joystick : View {
     // left or right stick
     protected var stickId = 0
 
+    /**
+     * V13.8 multi-touch: the stick must own exactly ONE finger and must ignore
+     * every other pointer that the framework routes into this view.
+     *
+     * Background: both stick fields cover a full half of the screen. Once a view
+     * is an active touch target, ViewGroup adds any further pointer that lands
+     * inside its bounds to that same target (ViewGroup.dispatchTouchEvent takes
+     * the "child is already receiving touch within its bounds" branch). Those
+     * extra pointers arrive as ACTION_POINTER_DOWN, and the old code both
+     * ignored them and kept reading event.x / event.y, which is pointer index 0
+     * and may well be a different finger. The stick then jumped or froze as soon
+     * as a second finger touched the same half of the screen.
+     */
+    private var activePointerId = MotionEvent.INVALID_POINTER_ID
+
     // width of a stroke to draw stick circles
     private var strokeWidth = 0
 
     private var showVisuals = true
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+
+    private val screenLocation = IntArray(2)
+    private val childLocation = IntArray(2)
 
     constructor(context: Context) : super(context) {
         init()
@@ -86,19 +104,24 @@ open class Joystick : View {
     }
 
     /**
-     * The joystick views intentionally cover a large half-screen touch field. In V8
-     * they are brought above the OSC buttons so a camera/movement drag which starts
-     * next to a button remains owned by the stick even after crossing that button.
+     * The joystick views cover a large half-screen touch field. For a real button
+     * press we pass ACTION_DOWN through to the control below. A small inset keeps
+     * the transparent outer pixels of PNG buttons usable as stick space instead of
+     * creating a surprisingly large dead rectangle around the icon.
      *
-     * For a real button press we still pass ACTION_DOWN through to the control below.
-     * A small inset keeps the transparent outer pixels of PNG buttons usable as stick
-     * space instead of creating a surprisingly large dead rectangle around the icon.
+     * V13.8: the hit test now uses the coordinates of the pointer that actually
+     * went down instead of MotionEvent.getRawX()/getRawY(). getRawX() is defined
+     * as pointer index 0 only, so on a multi-finger event it described the wrong
+     * finger. Local coordinates plus getLocationOnScreen() are correct on every
+     * API level and for every pointer index.
      */
-    private fun shouldPassThroughToButton(event: MotionEvent): Boolean {
+    private fun shouldPassThroughToButton(event: MotionEvent, pointerIndex: Int): Boolean {
         val group = parent as? ViewGroup ?: return false
-        val rawX = event.rawX
-        val rawY = event.rawY
-        val location = IntArray(2)
+        if (pointerIndex < 0 || pointerIndex >= event.pointerCount) return false
+
+        getLocationOnScreen(screenLocation)
+        val screenX = screenLocation[0] + event.getX(pointerIndex)
+        val screenY = screenLocation[1] + event.getY(pointerIndex)
 
         for (i in group.childCount - 1 downTo 0) {
             val child = group.getChildAt(i)
@@ -110,15 +133,15 @@ open class Joystick : View {
             if (child.tag !is OscElement)
                 continue
 
-            child.getLocationOnScreen(location)
+            child.getLocationOnScreen(childLocation)
             val insetX = child.width * 0.08f
             val insetY = child.height * 0.08f
-            val left = location[0] + insetX
-            val top = location[1] + insetY
-            val right = location[0] + child.width - insetX
-            val bottom = location[1] + child.height - insetY
+            val left = childLocation[0] + insetX
+            val top = childLocation[1] + insetY
+            val right = childLocation[0] + child.width - insetX
+            val bottom = childLocation[1] + child.height - insetY
 
-            if (rawX >= left && rawX <= right && rawY >= top && rawY <= bottom)
+            if (screenX >= left && screenX <= right && screenY >= top && screenY <= bottom)
                 return true
         }
         return false
@@ -192,30 +215,46 @@ open class Joystick : View {
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        if (event.actionMasked == MotionEvent.ACTION_DOWN && shouldPassThroughToButton(event))
-            return false
-
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
-                parent?.requestDisallowInterceptTouchEvent(true)
-                initialX = event.x
-                initialY = event.y
-                currentX = initialX
-                currentY = initialY
-                down = true
+                if (shouldPassThroughToButton(event, 0))
+                    return false
+
+                activePointerId = event.getPointerId(0)
+                beginStick(event, 0)
             }
+
+            MotionEvent.ACTION_POINTER_DOWN -> {
+                // An extra finger inside the same half of the screen. If the stick is
+                // already tracking a finger the new pointer is simply not ours: leave
+                // the tracked one alone instead of hijacking its coordinates.
+                if (activePointerId == MotionEvent.INVALID_POINTER_ID) {
+                    val index = event.actionIndex
+                    if (shouldPassThroughToButton(event, index))
+                        return false
+                    activePointerId = event.getPointerId(index)
+                    beginStick(event, index)
+                }
+            }
+
             MotionEvent.ACTION_MOVE -> {
-                currentX = event.x
-                currentY = event.y
+                val index = event.findPointerIndex(activePointerId)
+                if (index >= 0) {
+                    currentX = event.getX(index)
+                    currentY = event.getY(index)
+                    onStickMove(currentX, currentY)
+                }
             }
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                down = false
-                currentY = -1f
-                currentX = -1f
-                parent?.requestDisallowInterceptTouchEvent(false)
-                if (event.actionMasked == MotionEvent.ACTION_UP)
-                    performClick()
+
+            MotionEvent.ACTION_POINTER_UP -> {
+                // Only release the stick if the finger that left is the one we track.
+                if (event.getPointerId(event.actionIndex) == activePointerId)
+                    releaseStick(false)
             }
+
+            MotionEvent.ACTION_UP -> releaseStick(true)
+
+            MotionEvent.ACTION_CANCEL -> releaseStick(false)
         }
 
         updateStick()
@@ -223,10 +262,42 @@ open class Joystick : View {
         return true
     }
 
+    private fun beginStick(event: MotionEvent, pointerIndex: Int) {
+        parent?.requestDisallowInterceptTouchEvent(true)
+        initialX = event.getX(pointerIndex)
+        initialY = event.getY(pointerIndex)
+        currentX = initialX
+        currentY = initialY
+        down = true
+        onStickDown(currentX, currentY)
+    }
+
+    private fun releaseStick(click: Boolean) {
+        activePointerId = MotionEvent.INVALID_POINTER_ID
+        down = false
+        currentX = -1f
+        currentY = -1f
+        parent?.requestDisallowInterceptTouchEvent(false)
+        onStickUp()
+        if (click)
+            performClick()
+    }
+
     override fun performClick(): Boolean {
         super.performClick()
         return true
     }
+
+    /**
+     * Hooks for subclasses. They receive the coordinates of the *tracked* pointer,
+     * which is what a subclass has to use — reading event.x directly is wrong as
+     * soon as a second finger is present in the same view.
+     */
+    protected open fun onStickDown(x: Float, y: Float) {}
+
+    protected open fun onStickMove(x: Float, y: Float) {}
+
+    protected open fun onStickUp() {}
 
     protected open fun updateStick() {}
 }

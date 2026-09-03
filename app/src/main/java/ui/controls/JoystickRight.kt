@@ -19,21 +19,20 @@
 
 package ui.controls
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.util.AttributeSet
-import android.view.MotionEvent
 
 import org.libsdl.app.SDLActivity
 
 class JoystickRight : Joystick {
 
-    // V9.1 compile fix: keep right-stick tracking inside the standard Android
-    // onTouchEvent() API. The legacy Joystick base class has no
-    // non-existent pointer-tracking hooks, so overriding them breaks
-    // Kotlin compilation on the original OpenMW-Android UI code.
-    private var curX: Float = 0.toFloat()
-    private var curY: Float = 0.toFloat()
+    // V13.8: the right stick no longer overrides onTouchEvent() and no longer
+    // reads event.x / event.y. Those are pointer index 0, which is not necessarily
+    // the finger this stick is tracking once a second finger is on the same half
+    // of the screen. The base class now resolves the tracked pointer and hands the
+    // correct coordinates to these hooks.
+    private var curX = 0f
+    private var curY = 0f
 
     constructor(context: Context) : super(context)
 
@@ -42,30 +41,24 @@ class JoystickRight : Joystick {
     constructor(context: Context, attrs: AttributeSet, defStyle: Int)
         : super(context, attrs, defStyle)
 
-    @SuppressLint("ClickableViewAccessibility")
-    override fun onTouchEvent(event: MotionEvent): Boolean {
-        when (event.actionMasked) {
-            MotionEvent.ACTION_DOWN -> {
-                curX = event.x
-                curY = event.y
-            }
-            MotionEvent.ACTION_MOVE -> {
-                val newX = event.x
-                val newY = event.y
+    override fun onStickDown(x: Float, y: Float) {
+        curX = x
+        curY = y
+    }
 
-                // this isn't configurable here but configurable in openmw built-in settings
-                val mouseScalingFactor = 900f
+    override fun onStickMove(x: Float, y: Float) {
+        if (width <= 0 || height <= 0)
+            return
 
-                val movementX = (newX - curX) * mouseScalingFactor / width
-                val movementY = (newY - curY) * mouseScalingFactor / height
+        // this isn't configurable here but configurable in openmw built-in settings
+        val mouseScalingFactor = 900f
 
-                SDLActivity.sendRelativeMouseMotion(Math.round(movementX), Math.round(movementY))
+        val movementX = (x - curX) * mouseScalingFactor / width
+        val movementY = (y - curY) * mouseScalingFactor / height
 
-                curX = newX
-                curY = newY
-            }
-        }
+        SDLActivity.sendRelativeMouseMotion(Math.round(movementX), Math.round(movementY))
 
-        return super.onTouchEvent(event)
+        curX = x
+        curY = y
     }
 }

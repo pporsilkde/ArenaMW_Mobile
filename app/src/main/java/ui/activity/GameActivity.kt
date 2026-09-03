@@ -134,6 +134,22 @@ class GameActivity : SDLActivity() {
             // Deliberately do not use LIBGL_SHRINK. Runtime texture shrinking adds
             // conversion work and is not a safe camera-stutter optimization.
 
+            // ── VFX / particle safety (see patch 29) ─────────────────────────
+            // Spell and hit VFX are short-lived subgraphs that are created and
+            // destroyed constantly while casting. Under NG-GL4ES this means a
+            // burst of tiny VBO create/delete pairs per cast, which is the worst
+            // case for a Mali tiler: the buffer can still be referenced by a
+            // queued tile job when OSG deletes it. ARENAMW_VFX_SAFE=1 keeps those
+            // throwaway drawables on client arrays and freezes culled particle
+            // systems. Set ARENAMW_VFX_SAFE=0 in the "env" setting to A/B it.
+            Os.setenv("ARENAMW_VFX_SAFE", prefs!!.getString("pref_vfx_safe", "1") ?: "1", true)
+            // Optional burst limiter, off by default. ARENAMW_VFX_BURST=<n> caps how
+            // many *new* free VFX may spawn per 200 ms; useful to confirm whether a
+            // crash is driven by simultaneous effect count (AoE hitting many actors).
+            val vfxBurst = prefs!!.getString("pref_vfx_burst", "0") ?: "0"
+            if (vfxBurst != "0")
+                Os.setenv("ARENAMW_VFX_BURST", vfxBurst, true)
+
         } catch (e: ErrnoException) {
             Log.e("OpenMW", "Failed setting NG-GL4ES environment variables.")
             e.printStackTrace()
@@ -193,9 +209,17 @@ class GameActivity : SDLActivity() {
             val layout = layout
             // Keep left movement, right look and action-button fingers in separate
             // child streams. This prevents pointer-index stealing during multi-touch.
+            //
+            // V13.8: the window flag matters too. Some OEM themes ship a window
+            // whose FLAG_SPLIT_TOUCH is off, and then the framework refuses to split
+            // pointers at all — which is exactly the "only one finger works on this
+            // phone" report. Setting it explicitly makes behaviour identical on
+            // every device instead of depending on the ROM's theme defaults.
+            window.addFlags(WindowManager.LayoutParams.FLAG_SPLIT_TOUCH)
             layout.setMotionEventSplittingEnabled(true)
             osc = Osc()
             osc?.placeElements(layout)
+            enableSplitTouchTree(layout)
         }
         activeOsc = osc
         MouseCursor(this, osc)
@@ -215,10 +239,29 @@ class GameActivity : SDLActivity() {
         super.onDestroy()
     }
 
+    /**
+     * Motion-event splitting is a per-ViewGroup flag, not an inherited one. The OSC
+     * builds nested RelativeLayouts (on-screen keyboard container and its key layer)
+     * after the root has been configured, so walk the tree and enable it everywhere.
+     * Without this a nested container routes all pointers to a single child view.
+     */
+    private fun enableSplitTouchTree(root: android.view.ViewGroup, depth: Int = 0) {
+        if (depth > 8) return
+        root.isMotionEventSplittingEnabled = true
+        for (i in 0 until root.childCount) {
+            val child = root.getChildAt(i)
+            if (child is android.view.ViewGroup)
+                enableSplitTouchTree(child, depth + 1)
+        }
+    }
+
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus) {
             hideAndroidControls(this)
+            // Containers created lazily (OSK) are covered on the next focus pass.
+            if (osc != null)
+                enableSplitTouchTree(layout)
         }
     }
 

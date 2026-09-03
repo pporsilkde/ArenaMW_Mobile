@@ -712,12 +712,30 @@ class Osc {
             element.loadPrefs(target.context)
         }
 
-        // Keep the two large stick touch fields above the action-button layer. Their
-        // ACTION_DOWN hit test passes the centre of real OSC buttons through, while
-        // free-space drags stay captured by the stick even when the finger later
-        // crosses a button. This fixes the right-look stick getting "lost" nearby.
-        joystickLeft.view?.bringToFront()
-        joystickRight.view?.bringToFront()
+        // V13.8 multi-touch fix.
+        //
+        // Previously the two half-screen stick fields were raised above every
+        // button. That is what limited the OSC to a single working finger:
+        // ViewGroup.dispatchTouchEvent only offers a *new* pointer to the children
+        // it walks top-down, and as soon as it reaches a child that is already an
+        // active touch target and whose bounds contain the point, it assigns the
+        // pointer to that child and stops ("child is already receiving touch within
+        // its bounds"). The stick under the first finger is exactly such a target
+        // and it covers a whole half of the screen, so any second finger landing on
+        // the same half was silently absorbed and the button below never saw it.
+        // The stick's own ACTION_DOWN pass-through check was never even consulted,
+        // because no ACTION_DOWN is dispatched in that branch.
+        //
+        // Keeping the sticks at the bottom of the z-order fixes it: hit-testing
+        // reaches the small button first, so it becomes its own touch target. Drag
+        // ownership is unaffected — once a stick owns a pointer, Android keeps
+        // delivering that pointer's moves to it regardless of z-order, so a look
+        // drag that crosses a button still stays with the stick.
+        for (element in elements) {
+            if (element === joystickLeft || element === joystickRight)
+                continue
+            element.view?.bringToFront()
+        }
 
         osk.placeElements(target)
 

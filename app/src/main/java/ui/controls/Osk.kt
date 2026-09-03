@@ -461,6 +461,9 @@ class Osk {
             visibility = View.GONE
             clipChildren = false
             clipToPadding = false
+            // V13.8: without this the OSK container hands every pointer to a single
+            // key view, so shift/ctrl chords and fast two-finger typing are lost.
+            isMotionEventSplittingEnabled = true
             isClickable = true
             isFocusable = false
             isFocusableInTouchMode = false
@@ -495,6 +498,7 @@ class Osk {
         val inner = RelativeLayout(ctx).apply {
             clipChildren = false
             clipToPadding = false
+            isMotionEventSplittingEnabled = true
             isClickable = true
             isFocusable = false
             isFocusableInTouchMode = false
