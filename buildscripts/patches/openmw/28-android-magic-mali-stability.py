@@ -28,6 +28,13 @@ def _line_signature(line: str) -> str:
 
 def replace_once(text: str, old: str, new: str, label: str) -> str:
     # Fast exact/idempotent paths first.
+    # Alpha 0.01: an insertion may retain the complete old anchor inside new.
+    # Do not treat that embedded anchor as a fresh edit on the next pass.
+    # An additional old anchor outside the replacement remains ambiguous.
+    if old in new and text.count(new) == 1:
+        outside = text.replace(new, '', 1)
+        if old not in outside:
+            return text
     count = text.count(old)
     if count == 1:
         return text.replace(old, new, 1)
@@ -194,8 +201,8 @@ text = replace_once(
 )
 text = replace_once(
     text,
-    '''        parentNode->addChild(trans);\n        osg::ref_ptr<osg::Node> node = mResourceSystem->getSceneManager()->getInstance(model, trans);\n        node->getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::OFF);\n''',
-    '''        parentNode->addChild(trans);\n        osg::ref_ptr<osg::Node> node;\n        try\n        {\n            node = mResourceSystem->getSceneManager()->getInstance(model, trans);\n        }\n        catch (const std::exception& e)\n        {\n            parentNode->removeChild(trans);\n            Log(Debug::Warning) << "Skipping VFX '" << model << "': " << e.what();\n            return;\n        }\n        if (!node)\n        {\n            parentNode->removeChild(trans);\n            Log(Debug::Warning) << "Skipping VFX '" << model << "': scene instance is null";\n            return;\n        }\n        node->getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::OFF);\n''',
+    '        parentNode->addChild(trans);\n        osg::ref_ptr<osg::Node> node = mResourceSystem->getSceneManager()->getInstance(model, trans);\n',
+    '        parentNode->addChild(trans);\n        osg::ref_ptr<osg::Node> node;\n        try\n        {\n            node = mResourceSystem->getSceneManager()->getInstance(model, trans);\n        }\n        catch (const std::exception& e)\n        {\n            parentNode->removeChild(trans);\n            Log(Debug::Warning) << "Skipping VFX \'" << model << "\': " << e.what();\n            return;\n        }\n        if (!node)\n        {\n            parentNode->removeChild(trans);\n            Log(Debug::Warning) << "Skipping VFX \'" << model << "\': scene instance is null";\n            return;\n        }\n',
     'animation.cpp VFX instance exception guard',
 )
 text = replace_once(
@@ -235,8 +242,9 @@ text = replace_once(
     '#include <components/resource/scenemanager.hpp>\n#include <components/debug/debuglog.hpp>\n',
     'effectmanager.cpp debug include',
 )
-old = '''void EffectManager::addEffect(const std::string &model, const std::string& textureOverride, const osg::Vec3f &worldPosition, float scale, bool isMagicVFX)\n{\n    osg::ref_ptr<osg::Node> node = mResourceSystem->getSceneManager()->getInstance(model);\n\n    node->setNodeMask(Mask_Effect);\n'''
-new = '''void EffectManager::addEffect(const std::string &model, const std::string& textureOverride, const osg::Vec3f &worldPosition, float scale, bool isMagicVFX)\n{\n    if (model.empty() || !mParentNode || !mResourceSystem)\n        return;\n\n    osg::ref_ptr<osg::Node> node;\n    try\n    {\n        node = mResourceSystem->getSceneManager()->getInstance(model);\n    }\n    catch (const std::exception& e)\n    {\n        Log(Debug::Warning) << "Skipping free VFX '" << model << "': " << e.what();\n        return;\n    }\n    if (!node)\n    {\n        Log(Debug::Warning) << "Skipping free VFX '" << model << "': scene instance is null";\n        return;\n    }\n\n    node->setNodeMask(Mask_Effect);\n'''
+text = replace_once(text, 'void EffectManager::addEffect(const std::string &model, const std::string& textureOverride, const osg::Vec3f &worldPosition, float scale, bool isMagicVFX)\n{\n', 'void EffectManager::addEffect(const std::string &model, const std::string& textureOverride, const osg::Vec3f &worldPosition, float scale, bool isMagicVFX)\n{\n    if (model.empty() || !mParentNode || !mResourceSystem)\n        return;\n\n', 'effectmanager.cpp root guard')
+old = '    osg::ref_ptr<osg::Node> node = mResourceSystem->getSceneManager()->getInstance(model);\n'
+new = '    osg::ref_ptr<osg::Node> node;\n    try\n    {\n        node = mResourceSystem->getSceneManager()->getInstance(model);\n    }\n    catch (const std::exception& e)\n    {\n        Log(Debug::Warning) << "Skipping free VFX \'" << model << "\': " << e.what();\n        return;\n    }\n    if (!node)\n    {\n        Log(Debug::Warning) << "Skipping free VFX \'" << model << "\': scene instance is null";\n        return;\n    }\n'
 text = replace_once(text, old, new, 'effectmanager.cpp safe addEffect')
 save(rel, text)
 

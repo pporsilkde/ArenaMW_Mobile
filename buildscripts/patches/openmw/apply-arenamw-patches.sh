@@ -11,7 +11,7 @@ fi
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 ANCHOR_PATCH="$SCRIPT_DIR/../anchor_patch.py"
-PATCHSET_ID="arenamw-android-y002-anchor-main-safe"
+PATCHSET_ID="arenamw-android-alpha-0.01"
 MARKER="$SRC/.arenamw_android_patchset"
 
 copy_if_changed() {
